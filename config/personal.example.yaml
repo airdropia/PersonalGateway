@@ -1,0 +1,91 @@
+# PersonalGateway Configuration
+# Personal-use profile: enterprise features disabled by default.
+# Copy to config/config.yaml to customize.
+# Environment variables always override values in this file.
+
+server:
+  port: "8080"
+  base_path: "/"
+  body_size_limit: "10M"
+  swagger_enabled: false
+  pprof_enabled: false
+  enable_passthrough_routes: false
+  allow_passthrough_v1_alias: false
+  realtime_enabled: false
+  pid_file: "data/personal-gateway.pid"
+
+admin:
+  endpoints_enabled: true
+  ui_enabled: true
+  live_logs_enabled: false
+
+models:
+  enabled_by_default: true
+  configured_provider_models_mode: "allowlist"
+
+cache:
+  model:
+    refresh_interval: 3600
+    recheck_interval: 60
+    local:
+      cache_dir: ".cache"
+
+storage:
+  type: "sqlite"
+  sqlite:
+    path: "data/personal-gateway.db"
+
+logging:
+  enabled: false
+  log_bodies: false
+  log_revision_bodies: false
+  log_headers: false
+  buffer_size: 1000
+  flush_interval: 5
+  retention_days: 30
+  only_model_interactions: true
+
+usage:
+  enabled: true
+  pricing_recalculation_enabled: false
+  enforce_returning_usage_data: true
+  buffer_size: 1000
+  flush_interval: 5
+  retention_days: 90
+
+budgets:
+  enabled: false
+
+rate_limits:
+  enabled: false
+
+metrics:
+  enabled: false
+
+guardrails:
+  enabled: false
+
+mcp:
+  enabled: false
+
+workflows:
+  refresh_interval: 1m
+
+resilience:
+  retry:
+    max_retries: 3
+    initial_backoff: 1s
+    max_backoff: 30s
+    backoff_factor: 2.0
+    jitter_factor: 0.1
+  circuit_breaker:
+    enabled: true
+    failure_threshold: 5
+    success_threshold: 2
+    timeout: 30s
+
+http:
+  timeout: 600
+  response_header_timeout: 600
+
+</content>
