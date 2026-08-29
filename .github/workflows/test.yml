@@ -256,3 +256,23 @@ jobs:
 
       - name: Build
         run: go build -v ./cmd/gomodel
+
+  config-load:
+    name: Config Load Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Build
+        run: go build -v ./cmd/gomodel
+
+      - name: Test personal config load
+        run: ./gomodel --config config/personal.example.yaml --version
