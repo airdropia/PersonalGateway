@@ -16,31 +16,17 @@
 
   import OverviewPage from "$pages/overview/OverviewPage.svelte";
   import UsagePage from "$pages/usage/UsagePage.svelte";
-  import BudgetsPage from "$pages/budgets/BudgetsPage.svelte";
-  import RateLimitsPage from "$pages/rate-limits/RateLimitsPage.svelte";
   import ModelsPage from "$pages/models/ModelsPage.svelte";
   import PlaygroundPage from "$pages/playground/PlaygroundPage.svelte";
-  import WorkflowsPage from "$pages/workflows/WorkflowsPage.svelte";
-  import AuditLogsPage from "$pages/audit-logs/AuditLogsPage.svelte";
-  import GuardrailsPage from "$pages/guardrails/GuardrailsPage.svelte";
-  import McpServersPage from "$pages/mcp-servers/McpServersPage.svelte";
   import ProvidersConfigPage from "$pages/providers-config/ProvidersConfigPage.svelte";
   import AuthKeysPage from "$pages/auth-keys/AuthKeysPage.svelte";
   import SettingsPage from "$pages/settings/SettingsPage.svelte";
-  import ConversationDrawer from "$pages/audit-logs/ConversationDrawer.svelte";
-  import { conversationDrawer } from "$pages/audit-logs/conversationDrawer.svelte.js";
 
   const pageComponents = {
     overview: OverviewPage,
     usage: UsagePage,
-    budgets: BudgetsPage,
-    "rate-limits": RateLimitsPage,
     models: ModelsPage,
     playground: PlaygroundPage,
-    workflows: WorkflowsPage,
-    "audit-logs": AuditLogsPage,
-    guardrails: GuardrailsPage,
-    "mcp-servers": McpServersPage,
     "providers-config": ProvidersConfigPage,
     "auth-keys": AuthKeysPage,
     settings: SettingsPage,
@@ -72,15 +58,10 @@
 </script>
 
 <Sidebar />
-<main
-  id="dashboard-content"
-  class="content"
-  class:interactions-open={conversationDrawer.conversationOpen}
->
+<main id="dashboard-content" class="content">
   <DemoModeBanner />
   <PageComponent />
 </main>
-<ConversationDrawer />
 <AuthDialog />
 <TypedConfirmationDialog />
 <FlashMessages />

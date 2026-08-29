@@ -8,7 +8,6 @@
 // read runes stores, so call them inside a reactive context (Sidebar's
 // $derived and markup) to re-evaluate when the underlying state changes.
 
-import { runtimeConfig } from "$lib/stores/runtimeConfig.svelte.js";
 import { versionStore } from "$lib/stores/version.svelte.js";
 import * as m from "$lib/paraglide/messages.js";
 import {
@@ -16,7 +15,6 @@ import {
   ChartColumn,
   FlaskConical,
   Gauge,
-  History,
   KeyRound,
   LayoutDashboard,
   Plug,
@@ -32,34 +30,8 @@ export const NAV_ITEMS = [
   { page: "providers-config", label: m.navigation_providers, icon: ServerCog },
   { page: "models", label: m.navigation_models, icon: Box },
   { page: "playground", label: m.navigation_playground, icon: FlaskConical },
-  { page: "audit-logs", label: m.navigation_audit_logs, icon: History },
   { page: "usage", label: m.navigation_usage, icon: ChartColumn },
-  {
-    page: "budgets",
-    label: m.navigation_budgets,
-    icon: Wallet,
-    visible: () => runtimeConfig.budgetsVisible(),
-  },
-  {
-    page: "rate-limits",
-    label: m.navigation_rate_limits,
-    icon: Gauge,
-    visible: () => runtimeConfig.rateLimitsVisible(),
-  },
   { page: "auth-keys", label: m.navigation_api_keys, icon: KeyRound },
-  { page: "workflows", label: m.navigation_workflows, icon: Workflow },
-  {
-    page: "guardrails",
-    label: m.navigation_guardrails_beta,
-    icon: ShieldCheck,
-    visible: () => runtimeConfig.guardrailsVisible(),
-  },
-  {
-    page: "mcp-servers",
-    label: m.navigation_mcp_servers,
-    icon: Plug,
-    visible: () => runtimeConfig.mcpVisible(),
-  },
   {
     page: "settings",
     label: m.navigation_settings,
