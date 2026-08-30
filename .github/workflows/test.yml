@@ -134,29 +134,6 @@ jobs:
 
       - name: Run tests
         run: ${{ matrix.cmd }}
-
-  test-dashboard:
-    name: Dashboard Unit Tests
-    needs: [rebuild-dashboard-dist]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: '22'
-
-      - name: Install frontend dependencies
-        run: cd web/dashboard && npm ci --no-audit --no-fund
-
-      - name: Run dashboard JavaScript tests
-        run: make test-dashboard
-
-      - name: Check dashboard sources
-        run: cd web/dashboard && npx svelte-check --tsconfig ./jsconfig.json
-
   rebuild-dashboard-dist:
     name: Rebuild Dashboard Dist
     runs-on: ubuntu-latest
@@ -191,6 +168,26 @@ jobs:
             git commit -m "chore(dashboard): rebuild dist after source change"
             git push
           fi
+
+  test-dashboard:
+    name: Dashboard Unit Tests
+    needs: [rebuild-dashboard-dist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+      - name: Install frontend dependencies
+        run: cd web/dashboard && npm ci --no-audit --no-fund
+      - name: Run dashboard JavaScript tests
+        run: make test-dashboard
+      - name: Check dashboard sources
+        run: cd web/dashboard && npx svelte-check --tsconfig ./jsconfig.json
+
 
 
   performance:
