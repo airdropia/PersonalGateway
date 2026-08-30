@@ -3,12 +3,11 @@ package admin
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
+	"strings"
 	"testing"
 	"time"
 

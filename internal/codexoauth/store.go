@@ -20,6 +20,7 @@ type Store interface {
 	GetByProvider(ctx context.Context, providerName string) (*Connection, error)
 	Upsert(ctx context.Context, c Connection) error
 	Delete(ctx context.Context, providerName string) error
+	Close() error
 }
 
 // ErrNotFound is returned when no connection exists for the requested
@@ -169,8 +170,6 @@ type MongoStore struct {
 	db *mongo.Database
 }
 
-// NewMongoDBStore creates a MongoDB-backed Store. The database is the
-// caller-owned connection; the store does not close it.
 func NewMongoDBStore(database *mongo.Database) (*MongoStore, error) {
 	if database == nil {
 		return nil, fmt.Errorf("mongo database is required")
@@ -178,15 +177,6 @@ func NewMongoDBStore(database *mongo.Database) (*MongoStore, error) {
 	return &MongoStore{db: database}, nil
 }
 
-// New resolves a backend-agnostic Store from the shared gateway storage.
-// Mongo and SQL each get their own constructor; the return value
-// satisfies the Store interface and is safe for the request path.
-func New(ctx context.Context, shared storage.Storage) (Store, error) {
-	if shared == nil {
-		return nil, fmt.Errorf("shared storage is required")
-	}
-	return storage.ResolveSQLBackend[Store](ctx, shared,
-		func(db sqlx.DB) (Store, error) { return NewSQLStore(ctx, db) },
-		func(database *mongo.Database) (Store, error) { return NewMongoDBStore(database) },
-	)
-}
+// Close releases the underlying mongo collection reference. The
+// caller owns the *mongo.Database and is responsible for closing it.
+func (s *MongoStore) Close() error { return nil }

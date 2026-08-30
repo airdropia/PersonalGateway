@@ -50,6 +50,7 @@ type Handler struct {
 	runtimeSettings     *runtimesettings.Service
 	guardrails          guardrails.Catalog
 	guardrailDefs       *guardrails.Service
+	modelPreferences    *modelpreferences.Service
 	codexOAuth          CodexOAuthAdmin
 	liveBroker          *live.Broker
 	runtimeConfig       DashboardConfigResponse
