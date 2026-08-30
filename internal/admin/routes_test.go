@@ -60,6 +60,7 @@ func TestRegisterRoutes_RegistersExpectedPaths(t *testing.T) {
 		"GET /admin/provider-credentials/types",
 		"PUT /admin/provider-credentials",
 		"DELETE /admin/provider-credentials/:name",
+		"POST /admin/providers/chatgpt/import-codex",
 
 		"GET /admin/budgets",
 		"PUT /admin/budgets",

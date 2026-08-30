@@ -45,6 +45,7 @@ func (h *Handler) RegisterRoutes(g RouteRegistrar) {
 	g.GET("/provider-credentials/types", h.ProviderCredentialTypes)
 	g.PUT("/provider-credentials", h.UpsertProviderCredential)
 	g.DELETE("/provider-credentials/:name", h.DeleteProviderCredential)
+	g.POST("/providers/chatgpt/import-codex", h.ImportCodexAuth)
 
 	g.GET("/budgets", h.ListBudgets)
 	g.PUT("/budgets", h.UpsertBudget)
