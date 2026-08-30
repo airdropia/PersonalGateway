@@ -5,9 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
-	"sync"
-	"strings"
+	"fmt"
 	"testing"
 	"time"
 
@@ -93,36 +91,16 @@ func newCodexOAuthRequestContext(t *testing.T, method, path, body string) (*echo
 
 func makeCodexTestToken(t *testing.T, accountID string, exp time.Time) string {
 	t.Helper()
-	payload := `{"sub":"user-1","exp":` +
-		itoa(exp.Unix()) +
-+		`,"email":"u@example.com","https://api.openai.com/auth":{"chatgpt_account_id":"` + accountID + `"}}`
-+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
-+	body := base64.RawURLEncoding.EncodeToString([]byte(payload))
-+	sig := base64.RawURLEncoding.EncodeToString([]byte("sig"))
-+	return header + "." + body + "." + sig
-+}
-+
-+func itoa(n int64) string {
-+	if n == 0 {
-+		return "0"
-+	}
-+	negative := n < 0
-+	if negative {
-+		n = -n
-+	}
-+	var buf [20]byte
-+	i := len(buf)
-+	for n > 0 {
-+		i--
-+		buf[i] = byte('0' + n%10)
-+		n /= 10
-+	}
-+	if negative {
-+		i--
-+		buf[i] = '-'
-+	}
-+	return string(buf[i:])
-+}
+	payload := fmt.Sprintf(
+		`{"sub":"user-1","exp":%d,"email":"u@example.com","https://api.openai.com/auth":{"chatgpt_account_id":"%s"}}`,
+		exp.Unix(), accountID,
+	)
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
+	body := base64.RawURLEncoding.EncodeToString([]byte(payload))
+	sig := base64.RawURLEncoding.EncodeToString([]byte("sig"))
+	return header + "." + body + "." + sig
+}
+
 
 func newCodexHandler(t *testing.T, svc *fakeCodexOAuthService) *Handler {
 	t.Helper()
