@@ -150,9 +150,6 @@ func TestParse_RejectsWrongAuthMode(t *testing.T) {
 // returning an empty connection.
 func TestParse_RejectsMissingAccessToken(t *testing.T) {
 	body := []byte(`{"auth_mode":"chatgpt","tokens":{}}`)
-	if !errors.Is(Parse(body), ErrMissingAccessToken) {
-		// Parse returns nil conn + the error, so check that error.
-	}
 	_, err := Parse(body)
 	if !errors.Is(err, ErrMissingAccessToken) {
 		t.Fatalf("err = %v, want ErrMissingAccessToken", err)

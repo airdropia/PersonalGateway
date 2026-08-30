@@ -41,6 +41,32 @@ type importCodexAuthResponse struct {
 	Metadata     map[string]any `json:"metadata"`
 }
 
+// mapCodexImportError converts a codeximport sentinel error into a clean
+// admin error. Non-sentinel failures keep their wrapped message but
+// surface as 502 because they are the operator's signal that something
+// outside the import pipeline went wrong.
+func mapCodexImportError(c *echo.Context, err error) error {
+	switch {
+	case errors.Is(err, codeximport.ErrAuthFileNotFound):
+		return handleError(c, core.NewInvalidRequestError(
+			"no Codex auth.json found; run `codex login` first or set CODEX_HOME",
+			err,
+		))
+	case errors.Is(err, codeximport.ErrUnsupportedAuthMode):
+		return handleError(c, core.NewInvalidRequestError(
+			"Codex auth.json is not in chatgpt mode; the personal gateway imports ChatGPT subscriptions only",
+			err,
+		))
+	case errors.Is(err, codeximport.ErrMissingAccessToken):
+		return handleError(c, core.NewInvalidRequestError(
+			"Codex auth.json has no access_token; run `codex login` again",
+			err,
+		))
+	default:
+		return handleError(c, core.NewProviderError("codex_import", http.StatusBadGateway, "codex import failed", err))
+	}
+}
+
 // ImportCodexAuth handles POST /admin/providers/chatgpt/import-codex.
 //
 // The endpoint reads the local Codex CLI auth.json (CODEX_HOME/auth.json
@@ -73,30 +99,12 @@ func (h *Handler) ImportCodexAuth(c *echo.Context) error {
 
 	data, err := readCodexAuthFile(req.CodexHome)
 	if err != nil {
-		switch {
-		case errors.Is(err, codeximport.ErrAuthFileNotFound):
-			return handleError(c, core.NewInvalidRequestError(
-				"no Codex auth.json found; run `codex login` first or set CODEX_HOME",
-				err,
-			))
-		case errors.Is(err, codeximport.ErrUnsupportedAuthMode):
-			return handleError(c, core.NewInvalidRequestError(
-				"Codex auth.json is not in chatgpt mode; the personal gateway imports ChatGPT subscriptions only",
-				err,
-			))
-		case errors.Is(err, codeximport.ErrMissingAccessToken):
-			return handleError(c, core.NewInvalidRequestError(
-				"Codex auth.json has no access_token; run `codex login` again",
-				err,
-			))
-		default:
-			return handleError(c, core.NewProviderError("codex_import", http.StatusBadGateway, "codex import failed", err))
-		}
+		return mapCodexImportError(c, err)
 	}
 
 	conn, err := codeximport.Parse(data)
 	if err != nil {
-		return handleError(c, core.NewProviderError("codex_import", http.StatusBadGateway, "codex import failed", err))
+		return mapCodexImportError(c, err)
 	}
 
 	if h.providerCredentials.IsManaged(defaultCodexProviderName) {
