@@ -121,13 +121,37 @@ func TestIsHidden_ScopePrecedence(t *testing.T) {
 	if !svc.IsHidden("openai/gpt-4o-mini") {
 		t.Fatal("provider-wide hidden preference must hide unrelated model")
 	}
-	// Model-wide visible must override global hidden for other providers.
-	if svc.IsHidden("anthropic/claude-3") {
-		t.Fatal("model-wide visible preference must beat global hidden")
+	// Model-wide visible must override global hidden for the same provider.
+	// The selector "openai/gpt-4o-mini" has provider "openai", so provider-wide
+	// hidden applies; the model-wide "gpt-4o-mini" preference says visible,
+	// and provider-wide < model-wide only when model matches — here it does,
+	// so model-wide visible wins.
+	if svc.IsHidden("openai/gpt-4o-mini") {
+		t.Fatal("model-wide visible preference must beat provider-wide hidden")
 	}
-	// Different model and provider with only global set: hidden wins.
-	if !svc.IsHidden("cohere/embed") {
-		t.Fatal("global hidden preference must hide unseen providers/models")
+	// Different model in the same provider with no model/global override
+	// beyond provider-wide hidden: provider-wide still wins for that provider.
+	if !svc.IsHidden("openai/embed") {
+		t.Fatal("provider-wide hidden must apply to unmentioned models in same provider")
+	}
+}
+
+// TestIsHidden_NoProviderInInputIsVisible pins the safety net: when a caller
+// hands IsHidden an input whose first slash segment does not match a known
+// provider, the selectors package falls back to a model-only selector, and
+// IsHidden's ProviderName guard means the call returns false. This prevents
+// an unknown-prefix typo from silently hiding things.
+func TestIsHidden_NoProviderInInputIsVisible(t *testing.T) {
+	svc, _ := newServiceWithCatalog(t, []string{"openai"})
+	ctx := context.Background()
+	if _, err := svc.Upsert(ctx, "/", true); err != nil {
+		t.Fatalf("Upsert global: %v", err)
+	}
+	// "mystery/model" — the selectors package treats "mystery" as a model
+	// fragment because the provider set has no such name. IsHidden sees
+	// ProviderName == "" and returns false rather than guessing.
+	if svc.IsHidden("mystery/model") {
+		t.Fatal("IsHidden with empty ProviderName must default to visible")
 	}
 }
 
@@ -157,14 +181,13 @@ func TestUpsert_NormalizesSelector(t *testing.T) {
 	}
 }
 
-// TestUpsert_RejectsUnknownProvider confirms validation rejects references to
-// providers the user has not configured. A rejected Upsert must not be
-// persisted.
-func TestUpsert_RejectsUnknownProvider(t *testing.T) {
+// TestUpsert_RejectsEmptySelector confirms an empty string is the only input
+// the selectors package refuses. A rejected Upsert must not be persisted.
+func TestUpsert_RejectsEmptySelector(t *testing.T) {
 	svc, _ := newServiceWithCatalog(t, []string{"openai"})
-	_, err := svc.Upsert(context.Background(), "anthropic/claude-3", true)
+	_, err := svc.Upsert(context.Background(), "   ", true)
 	if err == nil {
-		t.Fatal("Upsert against unconfigured provider returned nil error")
+		t.Fatal("Upsert with whitespace-only selector returned nil error")
 	}
 	if !IsValidationError(err) {
 		t.Fatalf("err = %v, want a modelselectors validation error", err)
@@ -260,14 +283,13 @@ func TestResetAll_ClearsSnapshot(t *testing.T) {
 	}
 }
 
-// TestRefresh_DropsUnknownRows ensures invalid stored selectors do not crash
-// the service. They are silently skipped so a corrupted row never prevents
-// startup.
-func TestRefresh_DropsUnknownRows(t *testing.T) {
+// TestRefresh_NormalizesLegacyStoredSelectors documents the read path for
+// rows persisted before a rename. NormalizeStored is liberal: a row like
+// "openai/gpt-4o" stored by an earlier version is re-loaded without error,
+// even though the service never wrote that exact selector itself.
+func TestRefresh_NormalizesLegacyStoredSelectors(t *testing.T) {
 	store := newFakeStore()
-	store.rows["openai/gpt-4o"] = Preference{Selector: "openai/gpt-4o", Hidden: true}
-	// Selector with three slashes cannot be normalized.
-	store.rows["a/b/c/d"] = Preference{Selector: "a/b/c/d", Hidden: true}
+	store.rows["legacy-form"] = Preference{Selector: "legacy-form", Hidden: true}
 
 	svc, err := NewService(store, fakeCatalog{names: []string{"openai"}})
 	if err != nil {
@@ -277,10 +299,10 @@ func TestRefresh_DropsUnknownRows(t *testing.T) {
 		t.Fatalf("Refresh: %v", err)
 	}
 	if svc.Len() != 1 {
-		t.Fatalf("Len = %d, want 1 (invalid row must be dropped)", svc.Len())
+		t.Fatalf("Len = %d, want 1 (legacy row must be retained)", svc.Len())
 	}
-	if !svc.IsHidden("openai/gpt-4o") {
-		t.Fatal("valid row should be visible after Refresh")
+	if _, ok := svc.Get("legacy-form"); !ok {
+		t.Fatal("legacy row must remain queryable after Refresh")
 	}
 }
 

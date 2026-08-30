@@ -97,19 +97,18 @@ func jsonRequest(t *testing.T, method, path, body string) *http.Request {
 	return req
 }
 
-func newRequestContext(method, path, body string) (*echo.Context, *httptest.ResponseRecorder) {
+func newRequestContext(t *testing.T, method, path, body string) (*echo.Context, *httptest.ResponseRecorder) {
+	t.Helper()
 	e := echo.New()
-	req := jsonRequest(nil, method, path, body)
+	req := jsonRequest(t, method, path, body)
 	rec := httptest.NewRecorder()
 	return e.NewContext(req, rec), rec
 }
-
-// TestListModelPreferences_NilServiceReturnsUnavailable covers the failure
 // mode when the subsystem is not wired. The admin endpoint must answer with
 // a clear service-unavailable rather than crashing.
 func TestListModelPreferences_NilServiceReturnsUnavailable(t *testing.T) {
 	h := &Handler{}
-	c, rec := newRequestContext(http.MethodGet, "/admin/model-preferences", "")
+	c, rec := newRequestContext(t, http.MethodGet, "/admin/model-preferences", "")
 
 	if err := h.ListModelPreferences(c); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -127,7 +126,7 @@ func TestListModelPreferences_EmptyAndPopulated(t *testing.T) {
 	h := &Handler{modelPreferences: svc}
 
 	// Empty
-	c, rec := newRequestContext(http.MethodGet, "/admin/model-preferences", "")
+	c, rec := newRequestContext(t, http.MethodGet, "/admin/model-preferences", "")
 	if err := h.ListModelPreferences(c); err != nil {
 		t.Fatalf("ListModelPreferences: %v", err)
 	}
@@ -150,7 +149,7 @@ func TestListModelPreferences_EmptyAndPopulated(t *testing.T) {
 	if _, err := svc.Upsert(ctx, "openai/", false); err != nil {
 		t.Fatalf("Upsert provider: %v", err)
 	}
-	c, rec = newRequestContext(http.MethodGet, "/admin/model-preferences", "")
+	c, rec = newRequestContext(t, http.MethodGet, "/admin/model-preferences", "")
 	if err := h.ListModelPreferences(c); err != nil {
 		t.Fatalf("ListModelPreferences populated: %v", err)
 	}
@@ -178,7 +177,7 @@ func TestUpsertModelPreference_InvalidSelectorReturnsBadRequest(t *testing.T) {
 
 	body := modelPreferenceRequest{Selector: "   ", Hidden: true}
 	raw, _ := json.Marshal(body)
-	c, rec := newRequestContext(http.MethodPut, "/admin/model-preferences", string(raw))
+	c, rec := newRequestContext(t, http.MethodPut, "/admin/model-preferences", string(raw))
 	if err := h.UpsertModelPreference(c); err != nil {
 		t.Fatalf("UpsertModelPreference: %v", err)
 	}
@@ -195,7 +194,7 @@ func TestUpsertModelPreference_RoundTrip(t *testing.T) {
 
 	body := modelPreferenceRequest{Selector: " openai/gpt-4o ", Hidden: true}
 	raw, _ := json.Marshal(body)
-	c, rec := newRequestContext(http.MethodPut, "/admin/model-preferences", string(raw))
+	c, rec := newRequestContext(t, http.MethodPut, "/admin/model-preferences", string(raw))
 	if err := h.UpsertModelPreference(c); err != nil {
 		t.Fatalf("UpsertModelPreference: %v", err)
 	}
@@ -214,7 +213,7 @@ func TestUpsertModelPreference_RoundTrip(t *testing.T) {
 	}
 
 	// Re-fetch via GET to confirm persistence.
-	c, rec = newRequestContext(http.MethodGet, "/admin/model-preferences", "")
+	c, rec = newRequestContext(t, http.MethodGet, "/admin/model-preferences", "")
 	if err := h.ListModelPreferences(c); err != nil {
 		t.Fatalf("ListModelPreferences: %v", err)
 	}
@@ -236,7 +235,7 @@ func TestDeleteModelPreference_NotFoundReturns404(t *testing.T) {
 
 	body := deleteModelPreferenceRequest{Selector: "openai/gpt-4o"}
 	raw, _ := json.Marshal(body)
-	c, rec := newRequestContext(http.MethodDelete, "/admin/model-preferences", string(raw))
+	c, rec := newRequestContext(t, http.MethodDelete, "/admin/model-preferences", string(raw))
 	if err := h.DeleteModelPreference(c); err != nil {
 		t.Fatalf("DeleteModelPreference: %v", err)
 	}
@@ -257,7 +256,7 @@ func TestDeleteModelPreference_RoundTrip(t *testing.T) {
 
 	body := deleteModelPreferenceRequest{Selector: "openai/gpt-4o"}
 	raw, _ := json.Marshal(body)
-	c, rec := newRequestContext(http.MethodDelete, "/admin/model-preferences", string(raw))
+	c, rec := newRequestContext(t, http.MethodDelete, "/admin/model-preferences", string(raw))
 	if err := h.DeleteModelPreference(c); err != nil {
 		t.Fatalf("DeleteModelPreference: %v", err)
 	}
@@ -280,7 +279,7 @@ func TestResetModelPreferences_Returns204(t *testing.T) {
 			t.Fatalf("Upsert(%q): %v", sel, err)
 		}
 	}
-	c, rec := newRequestContext(http.MethodPost, "/admin/model-preferences/reset", "")
+	c, rec := newRequestContext(t, http.MethodPost, "/admin/model-preferences/reset", "")
 	if err := h.ResetModelPreferences(c); err != nil {
 		t.Fatalf("ResetModelPreferences: %v", err)
 	}
@@ -334,7 +333,7 @@ func TestListModelPreferences_NilServiceReturnsUnavailable_AllEndpoints(t *testi
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, rec := newRequestContext(tc.method, tc.path, tc.body)
+			c, rec := newRequestContext(t, tc.method, tc.path, tc.body)
 			if err := tc.invoke(c); err != nil {
 				t.Fatalf("invoke: %v", err)
 			}

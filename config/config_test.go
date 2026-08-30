@@ -2187,3 +2187,50 @@ func TestModelFilterValidate(t *testing.T) {
 		})
 	}
 }
+
+// TestPersonalConfigLoads is the personal-edition smoke test that backs the
+// "config-load" CI job. It copies the canonical example into a temp
+// directory's config.yaml, then calls Load() and asserts the personal
+// profile knobs survived parsing. This catches regressions where the
+func TestPersonalConfigLoads(t *testing.T) {
+	clearAllConfigEnvVars(t)
+
+	// Read the canonical example relative to the repo root before withTempDir
+	// changes the working directory. The repo root is the parent of the
+	// config package's directory.
+	repoRoot, err := filepath.Abs("..")
+	if err != nil {
+		t.Fatalf("abs repo root: %v", err)
+	}
+	src, err := os.ReadFile(filepath.Join(repoRoot, "config", "personal.example.yaml"))
+	if err != nil {
+		t.Fatalf("read personal.example.yaml: %v", err)
+	}
+
+	withTempDir(t, func(dir string) {
+		if err := os.WriteFile(filepath.Join(dir, "config.yaml"), src, 0o644); err != nil {
+			t.Fatalf("write config.yaml: %v", err)
+		}
+
+		result, err := Load()
+		if err != nil {
+			t.Fatalf("Load() rejected personal config: %v", err)
+		}
+		if result.Config == nil {
+			t.Fatal("Load() returned nil Config")
+		}
+		// Spot-check personal profile flags. These are the knobs the
+		// personal-edition profile flips relative to upstream defaults; if
+		// the schema drifts and these silently reset, the personal profile
+		// breaks without the dashboard noticing.
+		if result.Config.Server.SwaggerEnabled {
+			t.Error("server.swagger_enabled should default to false in personal profile")
+		}
+		if result.Config.Server.PprofEnabled {
+			t.Error("server.pprof_enabled should default to false in personal profile")
+		}
+		if !result.Config.Failover.Enabled {
+			t.Error("failover.enabled should remain true in personal profile")
+		}
+	})
+}
