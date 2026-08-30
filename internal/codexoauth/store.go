@@ -9,7 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
 	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+)
 
 // Store persists one Codex OAuth connection per provider name. The
 // package never indexes by account id at the SQL level: a single
@@ -65,6 +67,10 @@ func NewSQLStore(ctx context.Context, db sqlx.DB) (*SQLStore, error) {
 	return &SQLStore{db: db}, nil
 }
 
+// Close releases the underlying sqlx database reference. The caller
+// owns the underlying connection and is responsible for closing it.
+func (s *SQLStore) Close() error { return nil }
+
 // GetByProvider loads the single row for a provider name. Returns
 // ErrNotFound when no row exists so callers can branch cleanly.
 func (s *SQLStore) GetByProvider(ctx context.Context, providerName string) (*Connection, error) {
@@ -84,9 +90,9 @@ func (s *SQLStore) GetByProvider(ctx context.Context, providerName string) (*Con
 		return nil, ErrNotFound
 	}
 	var (
-		c                  Connection
-		accessExpiresAt    int64
-		lastRefreshAt      int64
+		c                    Connection
+		accessExpiresAt      int64
+		lastRefreshAt        int64
 		createdAt, updatedAt int64
 	)
 	if err := rows.Scan(
@@ -149,8 +155,8 @@ func (s *SQLStore) Upsert(ctx context.Context, c Connection) error {
 	return nil
 }
 
-// Delete removes the connection for a provider name. Returns ErrNotFound
-// when no row existed.
+// Delete removes the connection for a provider name. Returns
+// ErrNotFound when no row existed.
 func (s *SQLStore) Delete(ctx context.Context, providerName string) error {
 	affected, err := s.db.Exec(ctx, `DELETE FROM codex_oauth_connections WHERE provider_name = ?`, providerName)
 	if err != nil {
@@ -169,6 +175,8 @@ type MongoStore struct {
 	db *mongo.Database
 }
 
+// NewMongoDBStore creates a MongoDB-backed Store. The database is the
+// caller-owned connection; the store does not close it.
 func NewMongoDBStore(database *mongo.Database) (*MongoStore, error) {
 	if database == nil {
 		return nil, fmt.Errorf("mongo database is required")
@@ -198,6 +206,9 @@ func (s *MongoStore) GetByProvider(ctx context.Context, providerName string) (*C
 // Upsert writes the document under its provider name, replacing any
 // existing record.
 func (s *MongoStore) Upsert(ctx context.Context, c Connection) error {
+	if c.AccessToken == "" {
+		return fmt.Errorf("access_token is required")
+	}
 	now := time.Now().Unix()
 	if c.CreatedAt == 0 {
 		c.CreatedAt = now
