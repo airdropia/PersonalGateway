@@ -88,4 +88,5 @@ http:
   timeout: 600
   response_header_timeout: 600
 
-</content>
+version_check:
+  enabled: false

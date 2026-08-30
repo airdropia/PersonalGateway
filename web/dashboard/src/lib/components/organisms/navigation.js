@@ -14,15 +14,10 @@ import {
   Box,
   ChartColumn,
   FlaskConical,
-  Gauge,
   KeyRound,
   LayoutDashboard,
-  Plug,
   ServerCog,
   Settings,
-  ShieldCheck,
-  Wallet,
-  Workflow,
 } from "lucide";
 
 export const NAV_ITEMS = [

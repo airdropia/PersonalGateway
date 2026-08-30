@@ -19,6 +19,7 @@ import (
 	"github.com/enterpilot/gomodel/internal/core"
 	"github.com/enterpilot/gomodel/internal/guardrails"
 	"github.com/enterpilot/gomodel/internal/live"
+	"github.com/enterpilot/gomodel/internal/modelpreferences"
 	"github.com/enterpilot/gomodel/internal/pricingoverrides"
 	"github.com/enterpilot/gomodel/internal/providers"
 	"github.com/enterpilot/gomodel/internal/providers/health"
@@ -48,6 +49,7 @@ type Handler struct {
 	runtimeSettings     *runtimesettings.Service
 	guardrails          guardrails.Catalog
 	guardrailDefs       *guardrails.Service
+	modelPreferences    *modelpreferences.Service
 	liveBroker          *live.Broker
 	runtimeConfig       DashboardConfigResponse
 	runtimeRefresher    RuntimeRefresher
@@ -315,6 +317,12 @@ func WithGuardrailService(service *guardrails.Service) Option {
 	return func(h *Handler) {
 		h.guardrails = service
 		h.guardrailDefs = service
+	}
+}
+// WithModelPreferences enables model preference administration endpoints.
+func WithModelPreferences(service *modelpreferences.Service) Option {
+	return func(h *Handler) {
+		h.modelPreferences = service
 	}
 }
 

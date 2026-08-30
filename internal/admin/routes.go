@@ -90,6 +90,10 @@ func (h *Handler) RegisterRoutes(g RouteRegistrar) {
 	g.GET("/guardrails", h.ListGuardrails)
 	g.PUT("/guardrails", h.UpsertGuardrail)
 	g.DELETE("/guardrails", h.DeleteGuardrail)
+	g.GET("/model-preferences", h.ListModelPreferences)
+	g.PUT("/model-preferences", h.UpsertModelPreference)
+	g.DELETE("/model-preferences", h.DeleteModelPreference)
+	g.POST("/model-preferences/reset", h.ResetModelPreferences)
 
 	g.GET("/workflows", h.ListWorkflows)
 	g.GET("/workflows/guardrails", h.ListWorkflowGuardrails)

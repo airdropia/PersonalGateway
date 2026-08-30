@@ -33,6 +33,7 @@ import (
 	"github.com/enterpilot/gomodel/internal/live"
 	"github.com/enterpilot/gomodel/internal/llmclient"
 	"github.com/enterpilot/gomodel/internal/mcpgateway"
+	"github.com/enterpilot/gomodel/internal/modelpreferences"
 	"github.com/enterpilot/gomodel/internal/pricingoverrides"
 	"github.com/enterpilot/gomodel/internal/providers"
 	"github.com/enterpilot/gomodel/internal/providers/health"
@@ -70,6 +71,7 @@ type App struct {
 	pricingOverrides    *pricingoverrides.Result
 	authKeys            *authkeys.Result
 	guardrails          *guardrails.Result
+	modelPreferences    *modelpreferences.Result
 	workflows           *workflows.Result
 	live                *live.Broker
 	server              *server.Server
@@ -537,6 +539,13 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	}
 	app.providerCredentials = providerCredentialsResult
 	app.register(subsystemProviderCredentials, ownedByShutdown, app.providerCredentials.Close)
+	var modelPreferencesResult *modelpreferences.Result
+	modelPreferencesResult, err = modelpreferences.New(ctx, sharedStorage, providerResult.Registry)
+	if err != nil {
+		return fail("failed to initialize model preferences", err)
+	}
+	app.modelPreferences = modelPreferencesResult
+	app.register(subsystemModelPreferences, ownedByShutdown, app.modelPreferences.Close)
 
 	var virtualModelsResult *virtualmodels.Result
 	virtualModelsResult, err = virtualmodels.New(ctx, appCfg, sharedStorage, providerResult.Registry, declaredProviders)
@@ -805,6 +814,7 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 			providerResult.ConfiguredProviders,
 			authKeyResult.Service,
 			vm,
+			app.modelPreferences.Service,
 			app.pricingOverrides.Service,
 			workflowResult.Service,
 			app.guardrails.Service,
@@ -1240,6 +1250,7 @@ func initAdmin(
 	configuredProviders []providers.SanitizedProviderConfig,
 	authKeyService *authkeys.Service,
 	virtualModelService *virtualmodels.Service,
+	modelPreferencesService *modelpreferences.Service,
 	pricingOverrideService *pricingoverrides.Service,
 	workflowService *workflows.Service,
 	guardrailService *guardrails.Service,
@@ -1302,6 +1313,7 @@ func initAdmin(
 		admin.WithAuditReader(auditReader),
 		admin.WithAuthKeys(authKeyService),
 		admin.WithVirtualModels(virtualModelService),
+		admin.WithModelPreferences(modelPreferencesService),
 		admin.WithPricingOverrides(pricingOverrideService),
 		admin.WithWorkflows(workflowService),
 		admin.WithGuardrailService(guardrailService),

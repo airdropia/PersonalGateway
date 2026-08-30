@@ -3,6 +3,7 @@ package admin
 import (
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v5"
@@ -25,17 +26,18 @@ type modelInventoryResponse struct {
 	Access modelAccessResponse `json:"access"`
 }
 
-// ListModels handles GET /admin/models
-// Supports optional ?category= query param for filtering by model category.
+// ListModels handles GET /admin/models.
+// Supports optional category and include_hidden query parameters.
 //
 // @Summary      List all registered models with provider info and access state
 // @Tags         admin
 // @Produce      json
 // @Security     BearerAuth
-// @Param        category    query     string  false  "Filter by model category"
-// @Success      200  {array}  modelInventoryResponse
-// @Failure      400  {object}  core.GatewayError
-// @Failure      401  {object}  core.GatewayError
+// @Param        category        query     string  false  "Filter by model category"
+// @Param        include_hidden  query     bool    false  "Include hidden models"
+// @Success      200  {array} modelInventoryResponse
+// @Failure      400  {object} core.GatewayError
+// @Failure      401  {object} core.GatewayError
 // @Router       /admin/models [get]
 func (h *Handler) ListModels(c *echo.Context) error {
 	if h.registry == nil {
@@ -43,10 +45,17 @@ func (h *Handler) ListModels(c *echo.Context) error {
 	}
 
 	cat := core.ModelCategory(strings.TrimSpace(c.QueryParam("category")))
-	if cat != "" && cat != core.CategoryAll {
-		if !isValidCategory(cat) {
-			return handleError(c, core.NewInvalidRequestError("invalid category: "+string(cat), nil))
+	if cat != "" && cat != core.CategoryAll && !isValidCategory(cat) {
+		return handleError(c, core.NewInvalidRequestError("invalid category: "+string(cat), nil))
+	}
+
+	includeHidden := false
+	if raw := strings.TrimSpace(c.QueryParam("include_hidden")); raw != "" {
+		parsed, err := strconv.ParseBool(raw)
+		if err != nil {
+			return handleError(c, core.NewInvalidRequestError("invalid include_hidden value, expected true or false", err))
 		}
+		includeHidden = parsed
 	}
 
 	var models []providers.ModelWithProvider
@@ -55,23 +64,28 @@ func (h *Handler) ListModels(c *echo.Context) error {
 	} else {
 		models = h.registry.ListModelsWithProvider()
 	}
-
 	if models == nil {
 		models = []providers.ModelWithProvider{}
 	}
+
 	access := h.modelAccessResolver()
 	response := make([]modelInventoryResponse, 0, len(models))
 	for _, model := range models {
-		selector := core.ModelSelector{
-			Provider: strings.TrimSpace(model.ProviderName),
-			Model:    strings.TrimSpace(model.Model.ID),
+		selector := strings.TrimSpace(model.Selector)
+		if selector == "" {
+			selector = strings.TrimSpace(model.ProviderName) + "/" + strings.TrimSpace(model.Model.ID)
+		}
+		if !includeHidden && h.modelPreferences != nil && h.modelPreferences.IsHidden(selector) {
+			continue
 		}
 		response = append(response, modelInventoryResponse{
 			ModelWithProvider: model,
-			Access:            access(selector),
+			Access: access(core.ModelSelector{
+				Provider: strings.TrimSpace(model.ProviderName),
+				Model:    strings.TrimSpace(model.Model.ID),
+			}),
 		})
 	}
-
 	return c.JSON(http.StatusOK, response)
 }
 
@@ -97,8 +111,6 @@ func (h *Handler) modelAccessResolver() func(core.ModelSelector) modelAccessResp
 			EffectiveEnabled: effective.Enabled,
 			UserPaths:        append([]string(nil), effective.UserPaths...),
 		}
-		// Surface the matching policy row (if exact) so the dashboard can show
-		// which override applied. Redirect rows are not access policies.
 		if override, ok := h.virtualModels.Get(selector.QualifiedModel()); ok && override != nil && !override.IsRedirect() {
 			overrideCopy := *override
 			access.Override = &overrideCopy
@@ -107,36 +119,34 @@ func (h *Handler) modelAccessResolver() func(core.ModelSelector) modelAccessResp
 	}
 }
 
-// isValidCategory returns true if cat is a recognized model category.
 func isValidCategory(cat core.ModelCategory) bool {
 	return slices.Contains(core.AllCategories(), cat)
 }
 
-// ListCategories handles GET /admin/models/categories
+// ListCategories handles GET /admin/models/categories.
 //
 // @Summary      List model categories with counts
 // @Tags         admin
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {array}   providers.CategoryCount
-// @Failure      401  {object}  core.GatewayError
+// @Success      200  {array} providers.CategoryCount
+// @Failure      401  {object} core.GatewayError
 // @Router       /admin/models/categories [get]
 func (h *Handler) ListCategories(c *echo.Context) error {
 	if h.registry == nil {
 		return c.JSON(http.StatusOK, []providers.CategoryCount{})
 	}
-
 	return c.JSON(http.StatusOK, h.registry.GetCategoryCounts())
 }
 
-// DashboardConfig handles GET /admin/runtime/config
+// DashboardConfig handles GET /admin/runtime/config.
 //
 // @Summary      Get admin runtime configuration
 // @Tags         admin
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  DashboardConfigResponse
-// @Failure      401  {object}  core.GatewayError
+// @Success      200  {object} DashboardConfigResponse
+// @Failure      401  {object} core.GatewayError
 // @Router       /admin/runtime/config [get]
 func (h *Handler) DashboardConfig(c *echo.Context) error {
 	return c.JSON(http.StatusOK, cloneDashboardRuntimeConfig(h.runtimeConfig))

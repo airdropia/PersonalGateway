@@ -106,6 +106,11 @@ func TestRegisterRoutes_RegistersExpectedPaths(t *testing.T) {
 		"PUT /admin/guardrails",
 		"DELETE /admin/guardrails",
 
+		"GET /admin/model-preferences",
+		"PUT /admin/model-preferences",
+		"DELETE /admin/model-preferences",
+		"POST /admin/model-preferences/reset",
+
 		"GET /admin/workflows",
 		"GET /admin/workflows/guardrails",
 		"GET /admin/workflows/:id",
