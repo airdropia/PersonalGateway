@@ -169,6 +169,39 @@ jobs:
             echo "$untracked"
             exit 1
           fi
+  rebuild-dashboard-dist:
+    name: Rebuild Dashboard Dist
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+      - name: Install frontend dependencies
+        run: cd web/dashboard && npm ci --no-audit --no-fund
+      - name: Rebuild dashboard
+        run: cd web/dashboard && npm run build
+      - name: Commit any dist drift
+        run: |
+          if ! git diff --exit-code --stat -- internal/admin/dashboard/static/dist; then
+            untracked="$(git status --porcelain -- internal/admin/dashboard/static/dist)"
+            if [ -n "$untracked" ]; then
+              git add internal/admin/dashboard/static/dist
+            fi
+            if git diff --cached --quiet -- internal/admin/dashboard/static/dist; then
+              echo "Dashboard dist already current."
+              exit 0
+            fi
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git commit -m "chore(dashboard): rebuild dist after source change"
+            git push
+          fi
+
 
   performance:
     name: Performance Guard
