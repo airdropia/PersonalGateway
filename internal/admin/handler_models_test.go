@@ -182,8 +182,32 @@ func TestListModels_AppliesGlobalOverrideToConcreteModels(t *testing.T) {
 	}
 }
 
+
+// newModelRegistryWithExtraModel mirrors newVMModelRegistry but adds a second
+// model that the hidden-preference tests can rely on to remain visible after
+// filtering. Touching the shared helper would alter every other
+// ListModels_* test's expectations, so the variant stays local.
+func newModelRegistryWithExtraModel(t *testing.T) *providers.ModelRegistry {
+	t.Helper()
+	registry := providers.NewModelRegistry()
+	mock := &handlerMockProvider{
+		models: &core.ModelsResponse{
+			Object: "list",
+			Data: []core.Model{
+				{ID: "gpt-4o", Object: "model", OwnedBy: "openai"},
+				{ID: "gpt-4o-mini", Object: "model", OwnedBy: "openai"},
+			},
+		},
+	}
+	registry.RegisterProviderWithNameAndType(mock, "openai", "openai")
+	if err := registry.Initialize(context.Background()); err != nil {
+		t.Fatalf("Initialize() error = %v", err)
+	}
+	return registry
+}
+
 func TestListModels_HidesHiddenByDefault(t *testing.T) {
-	registry := newVMModelRegistry(t)
+	registry := newModelRegistryWithExtraModel(t)
 	svc, err := modelpreferences.NewService(
 		mpHandlerFakeStore{rows: map[string]modelpreferences.Preference{
 			"openai/gpt-4o": {Selector: "openai/gpt-4o", Hidden: true},
@@ -217,7 +241,7 @@ func TestListModels_HidesHiddenByDefault(t *testing.T) {
 }
 
 func TestListModels_IncludeHiddenQueryShowsHiddenRows(t *testing.T) {
-	registry := newVMModelRegistry(t)
+	registry := newModelRegistryWithExtraModel(t)
 	svc, err := modelpreferences.NewService(
 		mpHandlerFakeStore{rows: map[string]modelpreferences.Preference{
 			"openai/gpt-4o": {Selector: "openai/gpt-4o", Hidden: true},
@@ -253,7 +277,7 @@ func TestListModels_IncludeHiddenQueryShowsHiddenRows(t *testing.T) {
 }
 
 func TestListModels_InvalidIncludeHiddenReturnsBadRequest(t *testing.T) {
-	registry := newVMModelRegistry(t)
+	registry := newModelRegistryWithExtraModel(t)
 	svc, err := modelpreferences.NewService(
 		mpHandlerFakeStore{},
 		mpHandlerFakeCatalog{names: []string{"openai"}},
@@ -303,3 +327,4 @@ func (s mpHandlerFakeStore) Close() error { return nil }
 type mpHandlerFakeCatalog struct{ names []string }
 
 func (c mpHandlerFakeCatalog) ProviderNames() []string { return append([]string(nil), c.names...) }
+

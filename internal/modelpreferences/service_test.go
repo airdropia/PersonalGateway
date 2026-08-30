@@ -96,7 +96,9 @@ func newServiceWithCatalog(t *testing.T, providers []string) (*Service, *fakeSto
 
 // TestIsHidden_ScopePrecedence covers the documented precedence:
 //   exact > provider-wide > model-wide > global.
-// The most specific applicable preference must win.
+// The most specific applicable preference must win regardless of its hidden
+// flag. The selectors package resolves scopes in this order and returns the
+// first match it finds.
 func TestIsHidden_ScopePrecedence(t *testing.T) {
 	svc, _ := newServiceWithCatalog(t, []string{"openai"})
 
@@ -117,20 +119,14 @@ func TestIsHidden_ScopePrecedence(t *testing.T) {
 	if svc.IsHidden("openai/gpt-4o") {
 		t.Fatal("exact preference must beat provider-wide and global")
 	}
-	// Different exact model in same provider falls back to provider/global.
+	// Different model in the same provider with no exact row: provider-wide
+	// is the most specific applicable scope, so its hidden flag wins over
+	// model-wide and global.
 	if !svc.IsHidden("openai/gpt-4o-mini") {
-		t.Fatal("provider-wide hidden preference must hide unrelated model")
-	}
-	// Model-wide visible must override global hidden for the same provider.
-	// The selector "openai/gpt-4o-mini" has provider "openai", so provider-wide
-	// hidden applies; the model-wide "gpt-4o-mini" preference says visible,
-	// and provider-wide < model-wide only when model matches — here it does,
-	// so model-wide visible wins.
-	if svc.IsHidden("openai/gpt-4o-mini") {
-		t.Fatal("model-wide visible preference must beat provider-wide hidden")
+		t.Fatal("provider-wide hidden must beat model-wide visible for the same provider")
 	}
 	// Different model in the same provider with no model/global override
-	// beyond provider-wide hidden: provider-wide still wins for that provider.
+	// beyond provider-wide hidden: provider-wide still applies.
 	if !svc.IsHidden("openai/embed") {
 		t.Fatal("provider-wide hidden must apply to unmentioned models in same provider")
 	}
@@ -284,9 +280,9 @@ func TestResetAll_ClearsSnapshot(t *testing.T) {
 }
 
 // TestRefresh_NormalizesLegacyStoredSelectors documents the read path for
-// rows persisted before a rename. NormalizeStored is liberal: a row like
-// "openai/gpt-4o" stored by an earlier version is re-loaded without error,
-// even though the service never wrote that exact selector itself.
+// rows persisted before a rename. NormalizeStored is liberal: a row stored
+// by an earlier version is re-loaded without error, even though the service
+// never wrote that exact selector itself.
 func TestRefresh_NormalizesLegacyStoredSelectors(t *testing.T) {
 	store := newFakeStore()
 	store.rows["legacy-form"] = Preference{Selector: "legacy-form", Hidden: true}
