@@ -71,8 +71,10 @@ type App struct {
 	providerCredentials *providers.CredentialsResult
 	pricingOverrides    *pricingoverrides.Result
 	authKeys            *authkeys.Result
+	guardrails          *guardrails.Result
 	modelPreferences    *modelpreferences.Result
 	codexOAuth          *codexoauth.Result
+
 	workflows           *workflows.Result
 	live                *live.Broker
 	server              *server.Server
