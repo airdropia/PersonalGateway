@@ -46,7 +46,11 @@ func (h *Handler) RegisterRoutes(g RouteRegistrar) {
 	g.PUT("/provider-credentials", h.UpsertProviderCredential)
 	g.DELETE("/provider-credentials/:name", h.DeleteProviderCredential)
 	g.POST("/providers/chatgpt/import-codex", h.ImportCodexAuth)
-
+	g.POST("/providers/chatgpt/oauth/start", h.StartCodexOAuth)
+	g.POST("/providers/chatgpt/oauth/callback", h.CompleteCodexOAuth)
+	g.GET("/providers/chatgpt/oauth/status", h.GetCodexOAuthStatus)
+	g.POST("/providers/chatgpt/oauth/refresh", h.RefreshCodexOAuth)
+	g.POST("/providers/chatgpt/oauth/forget", h.ForgetCodexOAuth)
 	g.GET("/budgets", h.ListBudgets)
 	g.PUT("/budgets", h.UpsertBudget)
 	g.DELETE("/budgets", h.DeleteBudget)

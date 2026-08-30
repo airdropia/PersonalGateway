@@ -61,7 +61,11 @@ func TestRegisterRoutes_RegistersExpectedPaths(t *testing.T) {
 		"PUT /admin/provider-credentials",
 		"DELETE /admin/provider-credentials/:name",
 		"POST /admin/providers/chatgpt/import-codex",
-
+		"POST /admin/providers/chatgpt/oauth/start",
+		"POST /admin/providers/chatgpt/oauth/callback",
+		"GET /admin/providers/chatgpt/oauth/status",
+		"POST /admin/providers/chatgpt/oauth/refresh",
+		"POST /admin/providers/chatgpt/oauth/forget",
 		"GET /admin/budgets",
 		"PUT /admin/budgets",
 		"DELETE /admin/budgets",

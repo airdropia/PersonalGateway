@@ -61,6 +61,7 @@ const (
 	subsystemProviderCredentials = "provider credentials"
 	subsystemVirtualModels       = "virtual models"
 	subsystemModelPreferences    = "model preferences"
+	subsystemCodexOAuth          = "codex oauth"
 	subsystemTagging             = "tagging"
 	subsystemPricingOverrides    = "model pricing overrides"
 	subsystemGuardrails          = "guardrails"
@@ -115,8 +116,8 @@ func (a *App) shutdownOrder() []registeredSubsystem {
 		// Terminates upstream MCP sessions.
 		{name: subsystemMCPGateway, close: closerOf(a.mcpGateway)},
 		{name: subsystemProviderCredentials, close: closerOf(a.providerCredentials)},
-		{name: subsystemVirtualModels, close: closerOf(a.virtualModels)},
-		{name: subsystemModelPreferences, close: closerOf(a.modelPreferences)},
+	{name: subsystemVirtualModels, close: closerOf(a.virtualModels)},
+	{name: subsystemModelPreferences, close: closerOf(a.modelPreferences)},
 		{name: subsystemTagging, close: closerOf(a.tagging)},
 		{name: subsystemWorkflows, close: closerOf(a.workflows)},
 		{name: subsystemPricingOverrides, close: closerOf(a.pricingOverrides)},
