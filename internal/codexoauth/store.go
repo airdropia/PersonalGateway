@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-
-	"github.com/enterpilot/gomodel/internal/storage"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"github.com/enterpilot/gomodel/internal/storage/sqlx"
-)
 
 // Store persists one Codex OAuth connection per provider name. The
 // package never indexes by account id at the SQL level: a single
@@ -180,3 +179,52 @@ func NewMongoDBStore(database *mongo.Database) (*MongoStore, error) {
 // Close releases the underlying mongo collection reference. The
 // caller owns the *mongo.Database and is responsible for closing it.
 func (s *MongoStore) Close() error { return nil }
+
+// GetByProvider loads the single document keyed by provider_name.
+func (s *MongoStore) GetByProvider(ctx context.Context, providerName string) (*Connection, error) {
+	var conn Connection
+	err := s.db.Collection("codex_oauth_connections").
+		FindOne(ctx, bson.M{"provider_name": providerName}).
+		Decode(&conn)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query codex oauth connection: %w", err)
+	}
+	return &conn, nil
+}
+
+// Upsert writes the document under its provider name, replacing any
+// existing record.
+func (s *MongoStore) Upsert(ctx context.Context, c Connection) error {
+	now := time.Now().Unix()
+	if c.CreatedAt == 0 {
+		c.CreatedAt = now
+	}
+	c.UpdatedAt = now
+	if c.Status == "" {
+		c.Status = "active"
+	}
+	_, err := s.db.Collection("codex_oauth_connections").ReplaceOne(
+		ctx, bson.M{"provider_name": c.ProviderName}, c,
+		options.Replace().SetUpsert(true),
+	)
+	if err != nil {
+		return fmt.Errorf("upsert codex oauth connection: %w", err)
+	}
+	return nil
+}
+
+// Delete removes the document for a provider name. Returns
+// ErrNotFound when no document existed.
+func (s *MongoStore) Delete(ctx context.Context, providerName string) error {
+	res, err := s.db.Collection("codex_oauth_connections").DeleteOne(ctx, bson.M{"provider_name": providerName})
+	if err != nil {
+		return fmt.Errorf("delete codex oauth connection: %w", err)
+	}
+	if res.DeletedCount == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
