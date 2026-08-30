@@ -259,6 +259,8 @@ jobs:
   # parallel with the test jobs rather than gating behind them.
   build:
     name: Build
+    outputs:
+      binary_size_bytes: ${{ steps.size.outputs.binary_size_bytes }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -273,9 +275,22 @@ jobs:
 
       - name: Verify module integrity
         run: make mod-check
-
       - name: Build
         run: go build -v ./cmd/gomodel
+
+      - name: Measure binary size
+        id: size
+        run: |
+          # Plan §13.1 calls for measuring the binary size in CI so Stage 9
+          # can decide whether provider source removal pays off. We rebuild
+          # to a stable path so the lookup stays simple and the size
+          # matches what the release pipeline publishes on Windows.
+          set -euo pipefail
+          go build -o /tmp/gomodel-bin ./cmd/gomodel
+          size=$(stat -c '%s' /tmp/gomodel-bin)
+          echo "binary_size_bytes=$size" >> "$GITHUB_OUTPUT"
+          echo "Personal-gateway binary size: $size bytes"
+
 
   config-load:
     name: Config Load Test

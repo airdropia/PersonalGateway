@@ -90,3 +90,62 @@ http:
 
 version_check:
   enabled: false
+
+# ---------------------------------------------------------------------------
+# Personal-edition provider surface (Stage 5 — plan §8).
+#
+# The Go binary currently links every upstream provider package that GoModel
+# ships. Source removal of unused providers is deferred to Stage 9
+# (compile-time cleanup) because measuring the binary-size impact requires
+# the Windows amd64 release pipeline (§11) and at least one profile run on
+# the target runner. This comment documents which providers the personal
+# profile expects to be configured; absent providers simply never have a
+# credential registered, so they stay dormant at runtime.
+#
+# Personal-use providers (Stage 9 keep list):
+#   openai    - generic API key provider; the Codex CLI also targets it
+#   chatgpt   - OpenAI Codex / ChatGPT subscription provider (Stage 6)
+#   anthropic - Claude API
+#   gemini    - Google Gemini
+#   groq      - Groq inference
+#   xai       - xAI Grok
+#
+# Provider packages kept in the binary for Stage 6/7 work but typically not
+# configured by a personal installation:
+#   opencodego - OpenCode Go backend (Stage 6 fallback transport)
+#   azure      - Azure OpenAI; common in personal setups, kept for parity
+#   bedrock    - AWS Bedrock; occasionally useful for personal multi-cloud
+#
+# Provider packages whose only consumer is enterprise/SMB (Stage 9 will
+# remove these once the binary-size impact is measured):
+#   openrouter, bailian, oracle, bedrockmantle, chutes, cohere, deepseek,
+#   fireworks, vertex, hetzner, kilo, kimicode, llamacpp, llmd, meta,
+#   minimax, ollama, sglang, vllm, xiaomi, zai, elevenlabs
+#
+# Personal-deployment provider keys go below. The example is intentionally
+# minimal; configure only the providers you actually use. To enable a block,
+# uncomment the relevant section and set the matching API key environment
+# variable. The block under `# providers:` shows the canonical shape; the
+# personal profile does not register any providers by default so an empty
+# install boots into a clean model registry.
+#
+# providers:
+#   openai:
+#     type: openai
+#     api_keys:
+#       - ${OPENAI_API_KEY}
+#     models:
+#       - gpt-4o
+#       - gpt-4o-mini
+#       - gpt-3.5-turbo
+#   chatgpt:
+#     type: chatgpt
+#     api_keys:
+#       - ${CODEX_ACCESS_TOKEN}    # populated by the Stage 6 import endpoint
+#     models:
+#       - codex-1
+#       - gpt-5-codex
+#   anthropic:
+#     type: anthropic
+#     api_keys:
+#       - ${ANTHROPIC_API_KEY}
