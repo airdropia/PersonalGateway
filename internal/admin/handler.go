@@ -329,7 +329,7 @@ func WithModelPreferences(service *modelpreferences.Service) Option {
 }
 
 // WithCodexOAuth enables the Codex OAuth administration endpoints.
-func WithCodexOAuth(service *codexoauth.Service) Option {
+func WithCodexOAuth(service CodexOAuthAdmin) Option {
 	return func(h *Handler) {
 		h.codexOAuth = service
 	}

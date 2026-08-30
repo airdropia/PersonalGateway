@@ -3,12 +3,16 @@ package admin
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
-	"net/http"
+	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 	"time"
-
 	"github.com/labstack/echo/v5"
 
 	"github.com/enterpilot/gomodel/internal/codexoauth"

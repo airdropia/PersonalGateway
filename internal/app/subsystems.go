@@ -118,7 +118,7 @@ func (a *App) shutdownOrder() []registeredSubsystem {
 		{name: subsystemProviderCredentials, close: closerOf(a.providerCredentials)},
 	{name: subsystemVirtualModels, close: closerOf(a.virtualModels)},
 	{name: subsystemModelPreferences, close: closerOf(a.modelPreferences)},
-		{name: subsystemTagging, close: closerOf(a.tagging)},
+	{name: subsystemCodexOAuth, close: closerOf(a.codexOAuth)},
 		{name: subsystemWorkflows, close: closerOf(a.workflows)},
 		{name: subsystemPricingOverrides, close: closerOf(a.pricingOverrides)},
 		{name: subsystemGuardrails, close: closerOf(a.guardrails)},

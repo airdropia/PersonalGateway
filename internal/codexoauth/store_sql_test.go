@@ -4,15 +4,16 @@ import (
 	"context"
 	"testing"
 
+	"github.com/enterpilot/gomodel/internal/storage/sqlx"
 	"github.com/enterpilot/gomodel/internal/storage/sqlx/sqlxtest"
 )
 
 // runSQLStoreTest is the SQL-dialect test helper that mirrors the
 // pattern used by every other SQL-backed store in the codebase: the
 // suite runs once per available dialect through sqlxtest.Run.
-func runSQLStoreTest(t *testing.T, body func(t *testing.T, store *SQLStore, db sqlxDB)) {
+func runSQLStoreTest(t *testing.T, body func(t *testing.T, store *SQLStore, db sqlx.DB)) {
 	t.Helper()
-	sqlxtest.Run(t, func(t *testing.T, db sqlxDB) {
+	sqlxtest.Run(t, func(t *testing.T, db sqlx.DB) {
 		store, err := NewSQLStore(context.Background(), db)
 		if err != nil {
 			t.Fatalf("NewSQLStore: %v", err)
@@ -21,29 +22,11 @@ func runSQLStoreTest(t *testing.T, body func(t *testing.T, store *SQLStore, db s
 	})
 }
 
-// sqlxDB is the local alias for the sqlx.DB interface the package
-// imports transitively. Defining it here keeps the helper signature
-// readable without leaking the import into every test file.
-type sqlxDB = interface {
-	Schema(ctx context.Context, statements ...string) error
-	Query(ctx context.Context, query string, args ...any) (rows, error)
-	Exec(ctx context.Context, query string, args ...any) (int64, error)
-}
-
-// rows is the minimal surface runSQLStoreTest exercises. Real callers
-// use *sql.Rows directly; the tests below do not, so a typed
-// placeholder keeps the alias honest.
-type rows interface {
-	Next() bool
-	Close() error
-	Err() error
-}
-
 // TestSQLStore_UpsertGetDeleteRoundTrip pins the SQL store contract:
 // one row per provider_name, Get returns ErrNotFound when missing,
 // Delete removes the row, and a re-upsert after delete succeeds.
 func TestSQLStore_UpsertGetDeleteRoundTrip(t *testing.T) {
-	runSQLStoreTest(t, func(t *testing.T, store *SQLStore, _ sqlxDB) {
+	runSQLStoreTest(t, func(t *testing.T, store *SQLStore, _ sqlx.DB) {
 		ctx := context.Background()
 
 		// Initial get is ErrNotFound.
@@ -105,7 +88,7 @@ func TestSQLStore_UpsertGetDeleteRoundTrip(t *testing.T) {
 // contract: a second Upsert for the same provider name overwrites the
 // existing row.
 func TestSQLStore_UpsertReplaces(t *testing.T) {
-	runSQLStoreTest(t, func(t *testing.T, store *SQLStore, _ sqlxDB) {
+	runSQLStoreTest(t, func(t *testing.T, store *SQLStore, _ sqlx.DB) {
 		ctx := context.Background()
 
 		first := Connection{
@@ -140,7 +123,7 @@ func TestSQLStore_UpsertReplaces(t *testing.T) {
 // the service writes connections through the store, and a token-less
 // row must fail fast rather than land in the table.
 func TestSQLStore_UpsertRejectsMissingAccessToken(t *testing.T) {
-	runSQLStoreTest(t, func(t *testing.T, store *SQLStore, _ sqlxDB) {
+	runSQLStoreTest(t, func(t *testing.T, store *SQLStore, _ sqlx.DB) {
 		if err := store.Upsert(context.Background(), Connection{ProviderName: "chatgpt"}); err == nil {
 			t.Fatal("Upsert without access_token should fail")
 		}
@@ -151,8 +134,8 @@ func TestSQLStore_UpsertRejectsMissingAccessToken(t *testing.T) {
 // repeatedly without error: a second NewSQLStore on the same database
 // must not duplicate the table.
 func TestSQLStore_SchemaIdempotent(t *testing.T) {
-	runSQLStoreTest(t, func(t *testing.T, store *SQLStore, db sqlxDB) {
-		if err := NewSQLStore(context.Background(), db); err != nil {
+	runSQLStoreTest(t, func(t *testing.T, _ *SQLStore, db sqlx.DB) {
+		if _, err := NewSQLStore(context.Background(), db); err != nil {
 			t.Fatalf("second NewSQLStore: %v", err)
 		}
 	})
