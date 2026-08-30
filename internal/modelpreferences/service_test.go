@@ -301,7 +301,7 @@ func TestRefresh_NormalizesLegacyStoredSelectors(t *testing.T) {
 	if svc.Len() != 1 {
 		t.Fatalf("Len = %d, want 1 (legacy row must be retained)", svc.Len())
 	}
-	if _, ok := svc.Get("legacy-form"); !ok {
+	if _, ok, _ := svc.Get("legacy-form"); !ok {
 		t.Fatal("legacy row must remain queryable after Refresh")
 	}
 }
