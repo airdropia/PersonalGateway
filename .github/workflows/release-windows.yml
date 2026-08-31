@@ -125,7 +125,7 @@ jobs:
         with:
           name: personal-gateway-windows-amd64-${{ github.ref_name }}
           path: personal-gateway-windows-amd64.zip
-          path: personal-gateway-windows-amd64.zip
+
           if-no-files-found: error
           retention-days: 90
 
