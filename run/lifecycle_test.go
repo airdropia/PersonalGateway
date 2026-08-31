@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/providers"
 	"github.com/enterpilot/gomodel/internal/server"
 )
 
