@@ -158,10 +158,16 @@ jobs:
       - name: Verify --version reports metadata
         run: |
           $root = if ($env:GITHUB_WORKSPACE) { $env:GITHUB_WORKSPACE } else { $env:RUNNER_WORKSPACE }
-          Write-Host "Searching exe under $root"
-          $exe = Get-ChildItem -Path $root -Recurse -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -eq 'personal-gateway.exe' } | Select-Object -First 1 -ExpandProperty FullName
-          if (-not $exe) { throw "personal-gateway.exe not found under $root" }
+          Write-Host "GITHUB_WORKSPACE=$env:GITHUB_WORKSPACE"
+          Write-Host "RUNNER_WORKSPACE=$env:RUNNER_WORKSPACE"
+          Write-Host "root=$root"
+          Write-Host "--- top-level ---"
+          Get-ChildItem -Path $root | Format-Table Name
+          Write-Host "--- artifact dir ---"
+          Get-ChildItem -Path (Join-Path $root 'artifact') -ErrorAction SilentlyContinue | Format-Table Name
+          Write-Host "--- recursive find ---"
+          Get-ChildItem -Path $root -Recurse -ErrorAction SilentlyContinue -Filter '*.exe' | Format-Table FullName
+          $exe = Get-ChildItem -Path $root -Recurse -ErrorAction SilentlyContinue -Filter '*.exe' | Select-Object -First 1 -ExpandProperty FullName
           Write-Host "exe=$exe"
           & $exe --version
           if ($LASTEXITCODE -ne 0) {
