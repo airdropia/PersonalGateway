@@ -156,6 +156,7 @@ jobs:
       - name: Verify --version reports metadata
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE\artifact" -Force | Out-Null
           Set-Location "$env:GITHUB_WORKSPACE\artifact"
           & ".\personal-gateway.exe" --version
           if ($LASTEXITCODE -ne 0) {
