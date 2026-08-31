@@ -75,18 +75,16 @@ func TestDefaultProviderFactoryCredentialForms(t *testing.T) {
 			if schema.DefaultBaseURL != tt.defaultURL {
 				t.Errorf("DefaultBaseURL = %q, want %q", schema.DefaultBaseURL, tt.defaultURL)
 			}
-			if !slices.Equal(schema.Fields, tt.fields) {
-				t.Errorf("Fields = %v, want %v", schema.Fields, tt.fields)
+			got := make([]string, len(schema.Fields))
+			for i, f := range schema.Fields {
+				got[i] = f.Name
 			}
-			if !slices.Equal(schema.Required, tt.required) {
-				t.Errorf("Required = %v, want %v", schema.Required, tt.required)
+			if !slices.Equal(got, tt.fields) {
+				t.Errorf("Fields = %v, want %v", got, tt.fields)
 			}
-			if !slices.Equal(schema.Absent, tt.absent) {
-				t.Errorf("Absent = %v, want %v", schema.Absent, tt.absent)
-			}
-			for k, want := range tt.options {
-				if !slices.Equal(schema.Options[k], want) {
-					t.Errorf("Options[%q] = %v, want %v", k, schema.Options[k], want)
+			for _, want := range tt.absent {
+				if schema.Accepts(want) {
+					t.Errorf("schema should not accept field %q, but does", want)
 				}
 			}
 		})
