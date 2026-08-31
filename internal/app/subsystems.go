@@ -120,12 +120,12 @@ func (a *App) shutdownOrder() []registeredSubsystem {
 	{name: subsystemModelPreferences, close: closerOf(a.modelPreferences)},
 	{name: subsystemCodexOAuth, close: closerOf(a.codexOAuth)},
 	{name: subsystemTagging, close: closerOf(a.tagging)},
-		{name: subsystemPricingOverrides, close: closerOf(a.pricingOverrides)},
-		{name: subsystemGuardrails, close: closerOf(a.guardrails)},
-		{name: subsystemAuthKeys, close: closerOf(a.authKeys)},
-		{name: subsystemFileStore, close: closerOf(a.fileStore)},
-		// The remaining stores flush buffered work into storage, so they must
-		// close before the connection they write through.
+	{name: subsystemWorkflows, close: closerOf(a.workflows)},
+	{name: subsystemPricingOverrides, close: closerOf(a.pricingOverrides)},
+	{name: subsystemGuardrails, close: closerOf(a.guardrails)},
+	{name: subsystemAuthKeys, close: closerOf(a.authKeys)},
+	{name: subsystemFileStore, close: closerOf(a.fileStore)},
+	// The remaining stores flush buffered work into storage, so they must
 		{name: subsystemBatch, close: closerOf(a.batch)},
 		{name: subsystemBudgets, close: closerOf(a.budgets)},
 		{name: subsystemRateLimits, close: closerOf(a.rateLimits)},

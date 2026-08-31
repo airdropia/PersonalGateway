@@ -137,11 +137,23 @@ func (s *Service) CompleteLogin(ctx context.Context, providerName, callbackURL s
 		return nil, err
 	}
 
+	accountID := resp.AccountID
+	if accountID == "" {
+		accountID = jwtStringClaim(resp.AccessToken, "https://api.openai.com/auth", "chatgpt_account_id")
+	}
+	email := resp.Email
+	if email == "" {
+		email = jwtStringClaim(resp.AccessToken, "email", "")
+	}
+	plan := resp.Plan
+	if plan == "" {
+		plan = planFromTokenClaims(resp.IDToken, resp.AccessToken)
+	}
 	conn := Connection{
 		ProviderName:    providerName,
-		AccountID:       resp.AccountID,
-		Email:           resp.Email,
-		Plan:            resp.Plan,
+		AccountID:       accountID,
+		Email:           email,
+		Plan:            plan,
 		AccessToken:     resp.AccessToken,
 		RefreshToken:    resp.RefreshToken,
 		IDToken:         resp.IDToken,
