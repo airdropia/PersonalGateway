@@ -166,6 +166,9 @@ func jwtStringClaim(token, namespace, key string) string {
 		return ""
 	}
 	if namespace != "" {
+		if key == "" {
+			return stringFromJSON(claims[namespace])
+		}
 		raw, ok := claims[namespace]
 		if !ok {
 			return ""
@@ -179,7 +182,6 @@ func jwtStringClaim(token, namespace, key string) string {
 	return stringFromJSON(claims[key])
 }
 
-// stringFromJSON unmarshals a JSON string claim. Empty input returns "".
 func stringFromJSON(raw json.RawMessage) string {
 	if len(raw) == 0 {
 		return ""
