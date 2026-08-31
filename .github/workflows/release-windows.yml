@@ -158,7 +158,8 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE\artifact" -Force | Out-Null
           Set-Location "$env:GITHUB_WORKSPACE\artifact"
-          & ".\personal-gateway.exe" --version
+          $exe = (Resolve-Path ".\personal-gateway.exe").Path
+          & $exe --version
           if ($LASTEXITCODE -ne 0) {
             throw "personal-gateway.exe --version failed with exit code $LASTEXITCODE"
           }
