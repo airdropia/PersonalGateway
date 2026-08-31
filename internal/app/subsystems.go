@@ -115,11 +115,11 @@ func (a *App) shutdownOrder() []registeredSubsystem {
 		{name: subsystemProviders, close: closerOf(a.providers)},
 		// Terminates upstream MCP sessions.
 		{name: subsystemMCPGateway, close: closerOf(a.mcpGateway)},
-		{name: subsystemProviderCredentials, close: closerOf(a.providerCredentials)},
+	{name: subsystemProviderCredentials, close: closerOf(a.providerCredentials)},
 	{name: subsystemVirtualModels, close: closerOf(a.virtualModels)},
 	{name: subsystemModelPreferences, close: closerOf(a.modelPreferences)},
 	{name: subsystemCodexOAuth, close: closerOf(a.codexOAuth)},
-		{name: subsystemWorkflows, close: closerOf(a.workflows)},
+	{name: subsystemTagging, close: closerOf(a.tagging)},
 		{name: subsystemPricingOverrides, close: closerOf(a.pricingOverrides)},
 		{name: subsystemGuardrails, close: closerOf(a.guardrails)},
 		{name: subsystemAuthKeys, close: closerOf(a.authKeys)},
