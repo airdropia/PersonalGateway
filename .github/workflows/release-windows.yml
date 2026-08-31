@@ -157,10 +157,12 @@ jobs:
 
       - name: Verify --version reports metadata
         run: |
-          $artifact = Join-Path $env:RUNNER_WORKSPACE "artifact"
-          Write-Host "Artifact directory: $artifact"
-          Get-ChildItem -Path $artifact -Recurse | Format-Table FullName
-          $exe = Join-Path $artifact "personal-gateway.exe"
+          Write-Host "RUNNER_WORKSPACE=$env:RUNNER_WORKSPACE"
+          Write-Host "GITHUB_WORKSPACE=$env:GITHUB_WORKSPACE"
+          $exe = Get-ChildItem -Path $env:RUNNER_WORKSPACE -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -eq 'personal-gateway.exe' } | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $exe) { throw "personal-gateway.exe not found under $env:RUNNER_WORKSPACE" }
+          Write-Host "exe=$exe"
           & $exe --version
           if ($LASTEXITCODE -ne 0) {
             throw "personal-gateway.exe --version failed with exit code $LASTEXITCODE"
