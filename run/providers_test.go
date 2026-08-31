@@ -91,12 +91,6 @@ func TestDefaultProviderFactoryCredentialForms(t *testing.T) {
 	}
 }
 
-// credentialPayloadFields mirrors the upsert request's credential keys.
-var credentialPayloadFields = []string{
-	"api_keys", "session_sticky_keys", "base_url", "api_version", "backend", "auth_type", "api_mode",
-	"vertex_project", "vertex_location", "service_account_file", "service_account_json",
-	"service_account_json_base64", "gcp_scope", "models",
-}
 
 // TestDefaultProviderFactoryRegistersAllProviderTypes is the personal-edition
 // counterpart to the upstream test. Stage 9 trims the registered set to
