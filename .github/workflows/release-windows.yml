@@ -158,6 +158,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE\artifact" -Force | Out-Null
           Set-Location "$env:GITHUB_WORKSPACE\artifact"
+          Get-ChildItem -Recurse | Select-Object FullName
           $exe = (Resolve-Path ".\personal-gateway.exe").Path
           & $exe --version
           if ($LASTEXITCODE -ne 0) {
