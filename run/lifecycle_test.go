@@ -239,39 +239,25 @@ func TestServeGeneration_ReturnsStartFailure(t *testing.T) {
 		t.Fatalf("serveGeneration() error = %v, want start error %v", err, startErr)
 	}
 }
-
-func TestMain_KimicodeProviderRegistration(t *testing.T) {
+// TestPersonalEdition_KimicodeNotRegistered and
+// TestPersonalEdition_HetznerNotRegistered are the Stage 9 personal-edition
+// canaries against the upstream default registration list. The Stage 9
+// plan removes these provider packages from the link path; if a future
+// merge silently re-adds them, these tests fire. The old upstream tests
+// of the same name asserted presence — they would have been hidden under
+// the new factory, so this rewrite is the cutover.
+func TestPersonalEdition_KimicodeNotRegistered(t *testing.T) {
 	factory := defaultProviderFactory(&config.Config{})
-
 	registered := factory.RegisteredTypes()
-	found := slices.Contains(registered, "kimicode")
-	if !found {
-		t.Fatalf("kimicode not in RegisteredTypes() = %v", registered)
-	}
-
-	provider, err := factory.Create(providers.ProviderConfig{Type: "kimicode", APIKey: "test"})
-	if err != nil {
-		t.Fatalf("factory.Create(kimicode) error = %v, want nil", err)
-	}
-	if provider == nil {
-		t.Fatal("factory.Create(kimicode) returned nil provider")
+	if slices.Contains(registered, "kimicode") {
+		t.Fatalf("kimicode must not be registered in the personal edition (plan §8); got %v", registered)
 	}
 }
 
-func TestMain_HetznerProviderRegistration(t *testing.T) {
+func TestPersonalEdition_HetznerNotRegistered(t *testing.T) {
 	factory := defaultProviderFactory(&config.Config{})
-
 	registered := factory.RegisteredTypes()
-	found := slices.Contains(registered, "hetzner")
-	if !found {
-		t.Fatalf("hetzner not in RegisteredTypes() = %v", registered)
-	}
-
-	provider, err := factory.Create(providers.ProviderConfig{Type: "hetzner", APIKey: "test"})
-	if err != nil {
-		t.Fatalf("factory.Create(hetzner) error = %v, want nil", err)
-	}
-	if provider == nil {
-		t.Fatal("factory.Create(hetzner) returned nil provider")
+	if slices.Contains(registered, "hetzner") {
+		t.Fatalf("hetzner must not be registered in the personal edition (plan §8); got %v", registered)
 	}
 }
