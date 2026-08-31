@@ -50,8 +50,8 @@ func TestDefaultProviderFactoryCredentialForms(t *testing.T) {
 		},
 		{
 			// One adapter, two backends: an AI Studio key, or Google
-			// credentials once it points at Vertex.
 			providerType: "gemini",
+			defaultURL:   "https://generativelanguage.googleapis.com/v1beta/openai",
 			fields: []string{
 				"api_keys", "backend", "base_url", "api_mode", "auth_type",
 				"vertex_project", "vertex_location", "service_account_json",
