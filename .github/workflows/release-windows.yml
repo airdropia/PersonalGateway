@@ -152,14 +152,15 @@ jobs:
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           name: personal-gateway-windows-amd64-${{ github.ref_name }}
+          path: artifact
+
 
       - name: Verify --version reports metadata
-        shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE\artifact" -Force | Out-Null
-          Set-Location "$env:GITHUB_WORKSPACE\artifact"
-          Get-ChildItem -Recurse | Select-Object FullName
-          $exe = (Resolve-Path ".\personal-gateway.exe").Path
+          $artifact = Join-Path $env:RUNNER_WORKSPACE "artifact"
+          Write-Host "Artifact directory: $artifact"
+          Get-ChildItem -Path $artifact -Recurse | Format-Table FullName
+          $exe = Join-Path $artifact "personal-gateway.exe"
           & $exe --version
           if ($LASTEXITCODE -ne 0) {
             throw "personal-gateway.exe --version failed with exit code $LASTEXITCODE"
