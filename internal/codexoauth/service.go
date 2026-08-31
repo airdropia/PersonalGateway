@@ -2,16 +2,13 @@ package codexoauth
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
-
 	"golang.org/x/sync/singleflight"
 )
+
 // Service is the personal-edition OAuth state machine. It owns the
 // in-memory pending flow (one at a time per process) and exposes a small
 // surface the admin handler drives:
@@ -278,49 +275,7 @@ func planFromTokenClaims(idToken, accessToken string) string {
 
 // jwtStringClaim pulls a string claim from a JWT. Returns "" on any
 // parse error or missing claim. The Service uses the same parser the
-// HTTP client uses so the metadata surfaces the same way whether the
 // token arrived via the production HTTP path or a test fake.
-func jwtStringClaim(token, namespace, key string) string {
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return ""
-	}
-	dec, err := decodeBase64URL(parts[1])
-	if err != nil {
-		return ""
-	}
-	var claims map[string]json.RawMessage
-	if err := json.Unmarshal(dec, &claims); err != nil {
-		return ""
-	}
-	if namespace != "" {
-		raw, ok := claims[namespace]
-		if !ok {
-			return ""
-		}
-		var inner map[string]json.RawMessage
-		if err := json.Unmarshal(raw, &inner); err != nil {
-			return ""
-		}
-		return stringFromJSON(inner[key])
-	}
-	return stringFromJSON(claims[key])
-}
-
-func stringFromJSON(raw json.RawMessage) string {
-	if len(raw) == 0 {
-		return ""
-	}
-	var s string
-	if err := json.Unmarshal(raw, &s); err == nil {
-		return s
-	}
-	return ""
-}
-
-func decodeBase64URL(s string) ([]byte, error) {
-	if pad := len(s) % 4; pad != 0 {
-		s += strings.Repeat("=", 4-pad)
-	}
-	return base64.URLEncoding.DecodeString(s)
-}
+// Helpers (jwtStringClaim, stringFromJSON, decodeBase64URL) live in
+// client.go since they are package-private and the HTTP client needs
+// them too. The Service reuses them via the same package.
