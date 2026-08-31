@@ -148,7 +148,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@37930b1adf2b9e5e15a74e7ec38b95f60644d3c7 # v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           name: personal-gateway-windows-amd64-${{ needs.build-windows-amd64.outputs.version }}
           path: artifact
