@@ -123,7 +123,8 @@ jobs:
       - name: Upload release artifact
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
         with:
-          name: personal-gateway-windows-amd64-${{ steps.meta.outputs.version }}
+          name: personal-gateway-windows-amd64-${{ github.ref_name }}
+          path: personal-gateway-windows-amd64.zip
           path: personal-gateway-windows-amd64.zip
           if-no-files-found: error
           retention-days: 90
@@ -131,7 +132,7 @@ jobs:
       - name: Upload checksums
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
         with:
-          name: personal-gateway-windows-amd64-${{ steps.meta.outputs.version }}-sha256
+          name: personal-gateway-windows-amd64-${{ github.ref_name }}-sha256
           path: release/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 90
@@ -151,7 +152,6 @@ jobs:
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           name: personal-gateway-windows-amd64-${{ github.ref_name }}
-          path: artifact
 
       - name: Verify --version reports metadata
         shell: pwsh
