@@ -1,7 +1,12 @@
 # PersonalGateway Configuration
-# Personal-use profile: enterprise features disabled by default.
-# Copy to config/config.yaml to customize.
-# Environment variables always override values in this file.
+# Personal-use profile. Only the deltas from upstream defaults are listed
+# here; the upstream buildDefaultConfig supplies every other field. The
+# intent is to give a single-file personal-gateway.exe a coherent personal
+# profile out of the box while keeping env-var overrides and on-disk
+# config.yaml overrides the only knobs the operator needs to touch.
+#
+# Copy to config/config.yaml to customize. Environment variables always
+# override values in this file.
 
 server:
   port: "8080"
@@ -12,23 +17,6 @@ server:
   enable_passthrough_routes: false
   allow_passthrough_v1_alias: false
   realtime_enabled: false
-  pid_file: "data/personal-gateway.pid"
-
-admin:
-  endpoints_enabled: true
-  ui_enabled: true
-  live_logs_enabled: false
-
-models:
-  enabled_by_default: true
-  configured_provider_models_mode: "allowlist"
-
-cache:
-  model:
-    refresh_interval: 3600
-    recheck_interval: 60
-    local:
-      cache_dir: ".cache"
 
 storage:
   type: "sqlite"
