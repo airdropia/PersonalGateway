@@ -53,21 +53,6 @@ usage:
   flush_interval: 5
   retention_days: 90
 
-budgets:
-  enabled: false
-
-rate_limits:
-  enabled: false
-
-metrics:
-  enabled: false
-
-guardrails:
-  enabled: false
-
-mcp:
-  enabled: false
-
 workflows:
   refresh_interval: 1m
 
@@ -86,10 +71,6 @@ resilience:
 
 http:
   timeout: 600
-  response_header_timeout: 600
-
-version_check:
-  enabled: false
 
 # ---------------------------------------------------------------------------
 # Personal-edition provider surface (Stage 5 — plan §8).
