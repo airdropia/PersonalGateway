@@ -77,10 +77,23 @@ jobs:
               -X github.com/enterpilot/gomodel/internal/version.Date=${DATE}" \
             -o personal-gateway.exe ./cmd/gomodel
 
+      - name: Build personal-launcher.exe
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          COMMIT: ${{ steps.meta.outputs.commit }}
+          DATE: ${{ steps.meta.outputs.date }}
+        run: |
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
+            go build -trimpath -ldflags "-s -w -H=windowsgui \
+              -X github.com/enterpilot/gomodel/internal/version.Version=${VERSION} \
+              -X github.com/enterpilot/gomodel/internal/version.Commit=${COMMIT} \
+              -X github.com/enterpilot/gomodel/internal/version.Date=${DATE}" \
+            -o personal-launcher.exe ./cmd/personal-launcher
       - name: Stage release payload
         run: |
           mkdir -p release
           cp personal-gateway.exe release/personal-gateway.exe
+          cp personal-launcher.exe release/personal-launcher.exe
           cp config/personal.example.yaml release/config.example.yaml
           # README is intentionally short: the gateway is a console binary,
           # the config file documents every knob, and the docs site holds the
@@ -89,27 +102,40 @@ jobs:
           Personal Gateway (Windows amd64)
           =================================
 
-          Personal-use fork of GoModel. Single ZIP, drop-in install:
+          Personal-use fork of GoModel. Single ZIP, drop-in install.
 
+          QUICK START (RECOMMENDED):
             1. Unzip anywhere (e.g. C:\Users\you\personal-gateway).
-            2. Copy config.example.yaml to config.yaml next to the .exe.
-            3. Run personal-gateway.exe. The dashboard opens at
-               http://127.0.0.1:8080/admin/dashboard.
+            2. Double-click personal-launcher.exe. It starts the gateway as a
+               hidden child, opens the dashboard in your default browser,
+               and stays in the background until you close it.
 
-          Verify the build:
-            personal-gateway.exe --version
+          CONSOLE START (for diagnostics):
+            1. Unzip anywhere.
+            2. Open PowerShell or cmd in the install directory.
+            3. Run personal-gateway.exe. Press Ctrl+C to stop.
 
-          Switch to a custom config:
-            personal-gateway.exe --config path\to\config.yaml
+          CONFIGURATION:
+            The shipped config.example.yaml documents every knob. To customize:
+              copy config.example.yaml to config.yaml next to the .exe, edit,
+              and restart the launcher (or personal-gateway.exe).
 
-          See config.example.yaml for every supported knob.
+          VERIFY:
+              personal-gateway.exe --version
+
+          FILES:
+              personal-gateway.exe      console HTTP server
+              personal-launcher.exe     Windows GUI helper (no console)
+              config.example.yaml       reference configuration
+              README.txt                this file
+              SHA256SUMS.txt            checksums
           EOF
 
       - name: Compute checksums
         shell: bash
         run: |
           cd release
-          sha256sum personal-gateway.exe config.example.yaml README.txt > SHA256SUMS.txt
+          sha256sum personal-gateway.exe personal-launcher.exe config.example.yaml README.txt > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Zip release payload
