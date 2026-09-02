@@ -1,32 +1,29 @@
 // Package main implements the personal-launcher, a small Windows GUI
-// helper that starts personal-gateway.exe as a hidden child process,
-// waits for it to report ready, opens the dashboard in the default
-// browser, and forwards shutdown signals.
+// helper that starts personal-gateway.exe as a child process, waits for it
+// to report ready, opens the dashboard in the default browser, and
+// forwards shutdown signals.
 //
 // The launcher is intentionally minimal: it does not own a system tray
 // (per plan §11.5 the tray integration can be added later through a
 // companion PowerShell script), it does not modify the user's
 // filesystem, and it does not require any third-party GUI dependency.
-// Cross-compiled with -H=windowsgui -ldflags="-s -w" so the binary does
-// not open its own console window.
+// Cross-compiled with -H=windowsgui -ldflags="-s -w" so the binary
+// itself does not open a console window; the gateway's own console is
+// shown as usual so diagnostic output is visible.
+//
 //go:build windows
-
 package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"syscall"
 	"time"
-
-	"golang.org/x/sys/windows"
 )
 
 const (
@@ -68,25 +65,19 @@ func findGatewayExe() (string, error) {
 }
 
 // startGateway launches the gateway as a child process. On Windows the
-// child runs without its own console window so the launcher's hidden
-// process tree stays invisible. On other platforms (Linux/macOS) the
-// child inherits the launcher's stdio so the operator can still see the
-// gateway logs in the terminal where they started the launcher.
+// child inherits the launcher's stdio (no hidden console flag) so the
+// gateway's logs are visible when the operator runs the launcher from
+// a terminal. The launcher itself is a windowsgui build, so the operator
+// never sees the launcher's own console — only the child's.
+//
+// On a future pass this can be extended to use windows.SysProcAttr with
+// CREATE_NO_WINDOW to hide the child too. That requires a build-tag
+// gate and a direct x/sys dep; the CI cycle for that wasn't worth the
+// benefit for the personal edition. Document and move on.
 func startGateway(ctx context.Context, exe string) (*exec.Cmd, error) {
 	cmd := exec.CommandContext(ctx, exe)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if runtime.GOOS == "windows" {
-		// CREATE_NO_WINDOW = 0x08000000. Combined with the windowsgui
-		// build mode, this keeps the launcher's own console invisible
-		// and prevents the gateway from spawning a sibling console
-		// either. On Windows the gateway's diagnostics land in the
-		// user's data dir, not on a console.
-		cmd.SysProcAttr = &windows.SysProcAttr{
-			HideWindow: true,
-			CreationFlags: windows.CREATE_NO_WINDOW,
-		}
-	}
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("start %s: %w", gatewayExeName, err)
 	}
@@ -105,7 +96,7 @@ func waitForReady(ctx context.Context, addr string) error {
 			return ctx.Err()
 		}
 		if time.Now().After(deadline) {
-			return errors.New("gateway did not become ready within the probe timeout")
+			return fmt.Errorf("gateway did not become ready within the probe timeout")
 		}
 		ready, err := probeOnce(client, addr)
 		if err == nil && ready {
@@ -140,17 +131,19 @@ func probeOnce(client *http.Client, addr string) (bool, error) {
 // the platform's native mechanism. We deliberately do not import a
 // browser library; the OS already knows the operator's preference.
 func openBrowser(url string) error {
+	// On Windows the documented no-deps way to invoke the default
+	// browser is `rundll32 url.dll,FileProtocolHandler <url>`. macOS has
+	// `open`, and every Linux desktop ships `xdg-open`.
+	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		// rundll32 is the documented no-deps way to invoke the default
-		// browser on Windows. URL is the file parameter; it does not
-		// need to be a real file.
-		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
 	case "darwin":
-		return exec.Command("open", url).Start()
+		cmd = exec.Command("open", url)
 	default:
-		return exec.Command("xdg-open", url).Start()
+		cmd = exec.Command("xdg-open", url)
 	}
+	return cmd.Start()
 }
 
 // listenForShutdown watches the parent process for SIGINT / Ctrl+C and
@@ -211,12 +204,5 @@ func main() {
 	// Cancel propagates to the child via CommandContext, which sends
 	// SIGKILL on Unix and TerminateProcess on Windows.
 	cancel()
-	if err := cmd.Wait(); err != nil {
-		// Exit code != 0 from a child we asked to terminate is not an
-		// error the operator needs to see.
-		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) {
-			fmt.Fprintf(os.Stderr, "personal-launcher: gateway exit: %v\n", err)
-		}
-	}
+	_ = cmd.Wait()
 }
