@@ -1,7 +1,7 @@
 // Package config provides configuration management for the application.
 package config
-
 import (
+	_ "embed"
 	"errors"
 	"fmt"
 	"io"
@@ -14,9 +14,15 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-
 	"github.com/enterpilot/gomodel/internal/storage"
-)
+
+
+// personalDefaultConfigYAML is the personal-edition profile used as the
+// single-file default. When the gateway binary is shipped on its own
+// (without an on-disk config.yaml), the embedded file is what the
+// operator gets: a usable personal-edition profile out of the box.
+//go:embed personal.example.yaml
+var personalDefaultConfigYAML []byte
 
 // Config holds the application configuration.
 type Config struct {
@@ -470,9 +476,14 @@ func readConfigFile() (string, []byte, error) {
 			continue
 		default:
 			return "", nil, fmt.Errorf("failed to read %s: %w", path, err)
-		}
 	}
-	return "", nil, nil
+}
+	// the single-file personal-gateway.exe boots with personal defaults
+	// out of the box. An operator who wants a custom config drops
+	// config.yaml next to the exe and that wins.
+	if len(personalDefaultConfigYAML) > 0 {
+		return "embedded:personal.example.yaml", personalDefaultConfigYAML, nil
+	}
 }
 
 // yamlTypeSuffix matches the Go type name yaml.v3 appends to unknown-field errors
