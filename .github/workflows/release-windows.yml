@@ -1,12 +1,12 @@
 name: Release Personal Windows
 
 # Stage 10 of the personal-edition plan (plan §11). Triggered on tag pushes
-# matching the personal-edition release namespace. Builds the gateway binary
-# for windows/amd64, packages it with the personal example configuration and
-# a short README, and uploads the ZIP plus its checksum as workflow
-# artifacts. Per plan §11.4 the artifact is the source of truth for the
-# Windows release; the upstream release.yml workflow stays untouched so the
-# two pipelines can run in parallel.
+# matching the personal-edition release namespace. Builds the gateway
+# binary for windows/amd64, packages it with the personal example
+# configuration and a short README, and uploads the ZIP plus its
+# checksum as workflow artifacts. Per plan §11.4 the artifact is the
+# source of truth for the Windows release; the upstream release.yml
+# workflow stays untouched so the two pipelines can run in parallel.
 on:
   push:
     tags:
@@ -77,23 +77,10 @@ jobs:
               -X github.com/enterpilot/gomodel/internal/version.Date=${DATE}" \
             -o personal-gateway.exe ./cmd/gomodel
 
-      - name: Build personal-launcher.exe
-        env:
-          VERSION: ${{ steps.meta.outputs.version }}
-          COMMIT: ${{ steps.meta.outputs.commit }}
-          DATE: ${{ steps.meta.outputs.date }}
-        run: |
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
-            go build -trimpath -ldflags "-s -w -H=windowsgui \
-              -X github.com/enterpilot/gomodel/internal/version.Version=${VERSION} \
-              -X github.com/enterpilot/gomodel/internal/version.Commit=${COMMIT} \
-              -X github.com/enterpilot/gomodel/internal/version.Date=${DATE}" \
-            -o personal-launcher.exe ./cmd/personal-launcher
       - name: Stage release payload
         run: |
           mkdir -p release
           cp personal-gateway.exe release/personal-gateway.exe
-          cp personal-launcher.exe release/personal-launcher.exe
           cp config/personal.example.yaml release/config.example.yaml
           # README is intentionally short: the gateway is a console binary,
           # the config file documents every knob, and the docs site holds the
@@ -104,28 +91,23 @@ jobs:
 
           Personal-use fork of GoModel. Single ZIP, drop-in install.
 
-          QUICK START (RECOMMENDED):
+          QUICK START:
             1. Unzip anywhere (e.g. C:\Users\you\personal-gateway).
-            2. Double-click personal-launcher.exe. It starts the gateway as a
-               hidden child, opens the dashboard in your default browser,
-               and stays in the background until you close it.
-
-          CONSOLE START (for diagnostics):
-            1. Unzip anywhere.
             2. Open PowerShell or cmd in the install directory.
-            3. Run personal-gateway.exe. Press Ctrl+C to stop.
+            3. Run personal-gateway.exe. The dashboard opens at
+               http://127.0.0.1:8080/admin/dashboard.
+            4. Press Ctrl+C in the terminal to stop.
 
-          CONFIGURATION:
+          CUSTOM CONFIGURATION:
             The shipped config.example.yaml documents every knob. To customize:
               copy config.example.yaml to config.yaml next to the .exe, edit,
-              and restart the launcher (or personal-gateway.exe).
+              and restart personal-gateway.exe.
 
           VERIFY:
               personal-gateway.exe --version
 
           FILES:
-              personal-gateway.exe      console HTTP server
-              personal-launcher.exe     Windows GUI helper (no console)
+              personal-gateway.exe      single-file console HTTP server
               config.example.yaml       reference configuration
               README.txt                this file
               SHA256SUMS.txt            checksums
@@ -135,7 +117,7 @@ jobs:
         shell: bash
         run: |
           cd release
-          sha256sum personal-gateway.exe personal-launcher.exe config.example.yaml README.txt > SHA256SUMS.txt
+          sha256sum personal-gateway.exe config.example.yaml README.txt > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Zip release payload
@@ -163,6 +145,19 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Measure binary size
+        id: size
+        run: |
+          # Plan §13.1 calls for measuring the binary size in CI so Stage 9
+          # can decide whether provider source removal pays off. We rebuild
+          # to a stable path so the lookup stays simple and the size
+          # matches what the release pipeline publishes on Windows.
+          set -euo pipefail
+          go build -o /tmp/personal-gateway-bin ./cmd/gomodel
+          size=$(stat -c '%s' /tmp/personal-gateway-bin)
+          echo "binary_size_bytes=$size" >> "$GITHUB_OUTPUT"
+          echo "Personal-gateway binary size: $size bytes"
+
   # Plan §11.4 remote Windows smoke (best-effort). A real Windows runner
   # would catch cross-compile issues, but the linux build here already
   # exercises the same ldflags + module layout. The smoke step stays
@@ -179,7 +174,6 @@ jobs:
         with:
           name: personal-gateway-windows-amd64-${{ github.ref_name }}
           path: artifact
-
 
       - name: Verify --version reports metadata
         shell: pwsh
@@ -199,6 +193,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "personal-gateway.exe --version failed with exit code $LASTEXITCODE"
           }
+          Write-Host "windows smoke OK"
 
   # Plan §11.4: publish the verified Windows artifact as a GitHub Release so
   # operators download from the Releases page instead of digging into the
@@ -234,4 +229,3 @@ jobs:
             dist/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
