@@ -9,6 +9,8 @@
 // filesystem, and it does not require any third-party GUI dependency.
 // Cross-compiled with -H=windowsgui -ldflags="-s -w" so the binary does
 // not open its own console window.
+//go:build windows
+
 package main
 
 import (
@@ -23,6 +25,8 @@ import (
 	"runtime"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/windows"
 )
 
 const (
@@ -78,9 +82,9 @@ func startGateway(ctx context.Context, exe string) (*exec.Cmd, error) {
 		// and prevents the gateway from spawning a sibling console
 		// either. On Windows the gateway's diagnostics land in the
 		// user's data dir, not on a console.
-		cmd.SysProcAttr = &syscall.SysProcAttr{
+		cmd.SysProcAttr = &windows.SysProcAttr{
 			HideWindow: true,
-			CreationFlags: 0x08000000,
+			CreationFlags: windows.CREATE_NO_WINDOW,
 		}
 	}
 	if err := cmd.Start(); err != nil {

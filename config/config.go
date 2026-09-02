@@ -1,6 +1,5 @@
 // Package config provides configuration management for the application.
 package config
-
 import (
 	_ "embed"
 	"errors"
@@ -15,9 +14,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-
 	"github.com/enterpilot/gomodel/internal/storage"
-)
+
 
 // personalDefaultConfigYAML is the personal-edition profile used as the
 // single-file default. When the gateway binary is shipped on its own
@@ -46,6 +44,10 @@ type Config struct {
 	Tagging    TaggingConfig    `yaml:"tagging"`
 	Session    SessionConfig    `yaml:"session"`
 	MCP        MCPConfig        `yaml:"mcp"`
+
+	// VersionCheck controls the daily update check against the public
+	// release manifest. See VersionCheckConfig for what it sends.
+	VersionCheck VersionCheckConfig `yaml:"version_check"`
 
 	// Extensions holds configuration owned by custom distributions. Core keeps
 	// the values opaque; an extension decodes its named section with
@@ -201,6 +203,13 @@ func buildDefaultConfig() *Config {
 		},
 		MCP: MCPConfig{
 			Enabled: true,
+		},
+		VersionCheck: VersionCheckConfig{
+			Enabled:        true,
+			URL:            DefaultVersionCheckURL,
+			IntervalHours:  24,
+			TimeoutSeconds: 5,
+			MaxDailyChecks: 500,
 		},
 	}
 }
@@ -470,13 +479,10 @@ func readConfigFile() (string, []byte, error) {
 		}
 	}
 	// No on-disk config: fall back to the embedded personal profile so
-	// the single-file personal-gateway.exe boots with personal defaults
-	// out of the box. An operator who wants a custom config drops
 	// config.yaml next to the exe and that wins.
 	if len(personalDefaultConfigYAML) > 0 {
 		return "embedded:personal.example.yaml", personalDefaultConfigYAML, nil
 	}
- 	return "", nil, nil
 }
 
 // yamlTypeSuffix matches the Go type name yaml.v3 appends to unknown-field errors
