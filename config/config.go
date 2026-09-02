@@ -15,7 +15,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 	"github.com/enterpilot/gomodel/internal/storage"
-
+)
 
 // personalDefaultConfigYAML is the personal-edition profile used as the
 // single-file default. When the gateway binary is shipped on its own
@@ -479,10 +479,13 @@ func readConfigFile() (string, []byte, error) {
 		}
 	}
 	// No on-disk config: fall back to the embedded personal profile so
+	// the single-file personal-gateway.exe boots with personal defaults
+	// out of the box. An operator who wants a custom config drops
 	// config.yaml next to the exe and that wins.
 	if len(personalDefaultConfigYAML) > 0 {
 		return "embedded:personal.example.yaml", personalDefaultConfigYAML, nil
 	}
+	return "", nil, nil
 }
 
 // yamlTypeSuffix matches the Go type name yaml.v3 appends to unknown-field errors
