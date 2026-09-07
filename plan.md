@@ -958,11 +958,22 @@ optional; later stages depend on earlier ones.
     wired and tested.
 1.4 Delete the remaining 31 provider packages in one commit per package.
 1.5 Delete `internal/providers/googlecommon/`,
-    `internal/providers/health/`, `internal/providers/auth_headers.go`,
+    `internal/providers/auth_headers.go`,
     `chat_chunk_sse.go`, `responses_*`, `cache_control.go`,
     `cache_planner.go`, and every shared helper file in
     `internal/providers/*.go`.
 1.6 Delete `internal/anthropicapi/`.
+
+    Implementation note 2 (recorded after dependency analysis):
+    `cache_control.go`, `cache_planner.go`, and `passthrough.go` in
+    internal/providers are still referenced by `router.go` and
+    `internal/server/passthrough_*`, which survive Stage 1. They are
+    vendor-era Anthropic-cache/OpenAI-passthrough plumbing; their
+    deletion is deferred to the router/server simplification stage so
+    the build stays green at each commit. `internal/anthropicapi/` is
+    imported by internal/server's Anthropic `/v1/messages` surface; it
+    is deferred to the same server-surface cut (plan §4.3 deletes that
+    surface).
 
     Implementation note (recorded after dependency analysis): openai is the
     shared base of 22 other vendor packages, so it cannot be deleted on its
