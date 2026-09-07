@@ -21,7 +21,6 @@ import (
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/gateway"
 	"github.com/airdropia/pgw/internal/llmclient"
-	"github.com/airdropia/pgw/internal/observability"
 	"github.com/airdropia/pgw/internal/responsecache"
 	"github.com/airdropia/pgw/internal/responsestore"
 	"github.com/airdropia/pgw/internal/streaming"
@@ -487,12 +486,6 @@ type snapshotFailureRecord struct {
 }
 
 func (s *translatedInferenceService) recordResponseSnapshotStoreFailure(rec snapshotFailureRecord, err error) {
-	observability.ResponseSnapshotStoreFailures.WithLabelValues(
-		strings.TrimSpace(rec.providerType),
-		strings.TrimSpace(rec.providerName),
-		"store",
-	).Inc()
-
 	slog.Warn("response snapshot store failed",
 		"request_id", rec.requestID,
 		"provider_type", rec.providerType,

@@ -88,22 +88,6 @@ func TestShutdownOrderCoversEveryRegisteredSubsystem(t *testing.T) {
 	}
 }
 
-func TestShutdownStopsRuntimeSettingsBeforeProviders(t *testing.T) {
-	order := newFullyWiredApp(t).shutdownOrder()
-	runtimeSettingsIndex := slices.IndexFunc(order, func(subsystem registeredSubsystem) bool {
-		return subsystem.name == subsystemRuntimeSettings
-	})
-	providersIndex := slices.IndexFunc(order, func(subsystem registeredSubsystem) bool {
-		return subsystem.name == subsystemProviders
-	})
-	if runtimeSettingsIndex < 0 || providersIndex < 0 || runtimeSettingsIndex >= providersIndex {
-		t.Fatalf("shutdown order must stop runtime settings before providers")
-	}
-}
-
-// The mirror of the check above: an entry in shutdownOrder that nothing
-// registers is either a stale leftover or a subsystem whose owner was
-// mislabelled, and it silently closes nothing.
 func TestShutdownOrderHasNoUnregisteredEntries(t *testing.T) {
 	application := newFullyWiredApp(t)
 
@@ -169,7 +153,6 @@ func TestNonShutdownOwnedSubsystemsAreRegisteredButNotInShutdownOrder(t *testing
 		subsystemResponseStore:     ownedByServer,
 		subsystemConversationStore: ownedByServer,
 		subsystemResponseCache:     ownedByServer,
-		subsystemLive:              ownedByPrologue,
 	} {
 		owner, ok := owners[name]
 		if !ok {

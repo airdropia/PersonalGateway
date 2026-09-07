@@ -1,15 +1,13 @@
 package config
 
-import "github.com/airdropia/pgw/internal/versioncheck"
-
-// VersionCheckConfig controls the daily update check against the GoModel
-// release manifest.
+// VersionCheckConfig controls the optional outbound update check.
 //
-// The check sends the running version, the distribution name, and an
-// anonymous install identifier. It never sends API keys, provider
-// credentials, model names, prompts, usage data, client addresses, or the
-// hostname the gateway is served on. Set Enabled to false to stop all
-// outbound traffic from this subsystem.
+// The upstream telemetry beacon (visit cookies, install ids, forwarding
+// visit data to the release host) was removed with the versioncheck
+// package in plan §16 Stage 3. The struct stays so on-disk config files
+// that declare version_check do not fail strict parsing; a lightweight
+// GitHub-releases check is planned for Stage 9/10 (plan §8.3 Settings
+// update notice).
 type VersionCheckConfig struct {
 	// Enabled turns the daily update check on.
 	// Default: true
@@ -36,6 +34,7 @@ type VersionCheckConfig struct {
 	MaxDailyChecks int `yaml:"max_daily_checks" env:"GOMODEL_VERSION_CHECK_MAX_DAILY"`
 }
 
-// DefaultVersionCheckURL is the public release manifest served by the GoModel
-// website. "/core.txt" or "/pro.txt" is appended per distribution.
-const DefaultVersionCheckURL = versioncheck.DefaultURL
+// DefaultVersionCheckURL is the legacy upstream manifest base. Kept as a
+// literal now that the versioncheck package is gone; Stage 9/10 replaces
+// this with the pgw release manifest.
+const DefaultVersionCheckURL = "https://gomodel.enterpilot.io/version"

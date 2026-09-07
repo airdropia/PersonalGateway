@@ -32,7 +32,6 @@ import (
 	"github.com/airdropia/pgw/internal/gateway"
 	"github.com/airdropia/pgw/internal/guardrails"
 	"github.com/airdropia/pgw/internal/llmclient"
-	"github.com/airdropia/pgw/internal/observability"
 	provideradapter "github.com/airdropia/pgw/internal/providers"
 	"github.com/airdropia/pgw/internal/responsestore"
 	"github.com/airdropia/pgw/internal/usage"
@@ -5081,7 +5080,6 @@ func TestResponsesLifecycle_StoreFalseSkipsLocalSnapshot(t *testing.T) {
 }
 
 func TestResponsesLifecycle_ReturnsSuccessWhenSnapshotStoreFails(t *testing.T) {
-	observability.ResetMetrics()
 	provider := &mockProvider{
 		supportedModels: []string{"gpt-5-mini"},
 		providerTypes: map[string]string{
@@ -5112,11 +5110,6 @@ func TestResponsesLifecycle_ReturnsSuccessWhenSnapshotStoreFails(t *testing.T) {
 		t.Fatalf("response id = %q, want resp_store_failure_1", resp.ID)
 	}
 	srv.handler.drainSnapshotWrites()
-
-	counter := observability.ResponseSnapshotStoreFailures.WithLabelValues("mock", "", "store")
-	if got := testutil.ToFloat64(counter); got != 1 {
-		t.Fatalf("snapshot store failures = %v, want 1", got)
-	}
 }
 
 // blockingResponseStore delays Create until released, to prove the request
@@ -5195,7 +5188,6 @@ func TestResponsesLifecycle_SnapshotWriteDoesNotBlockResponse(t *testing.T) {
 }
 
 func TestResponsesLifecycle_SnapshotWriteSkippedAfterDrain(t *testing.T) {
-	observability.ResetMetrics()
 	store := responsestore.NewMemoryStore(responsestore.WithUnboundedRetention())
 	provider := &mockProvider{
 		supportedModels: []string{"gpt-5-mini"},
@@ -5223,10 +5215,6 @@ func TestResponsesLifecycle_SnapshotWriteSkippedAfterDrain(t *testing.T) {
 	}
 	if _, err := store.Get(context.Background(), "resp_after_drain_1"); !errors.Is(err, responsestore.ErrNotFound) {
 		t.Fatalf("store.Get() error = %v, want ErrNotFound", err)
-	}
-	counter := observability.ResponseSnapshotStoreFailures.WithLabelValues("mock", "", "store")
-	if got := testutil.ToFloat64(counter); got != 1 {
-		t.Fatalf("snapshot store failures = %v, want 1", got)
 	}
 }
 

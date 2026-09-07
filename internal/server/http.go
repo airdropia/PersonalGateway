@@ -31,7 +31,6 @@ import (
 	"github.com/airdropia/pgw/internal/session"
 	"github.com/airdropia/pgw/internal/tagging"
 	"github.com/airdropia/pgw/internal/usage"
-	"github.com/airdropia/pgw/internal/versioncheck"
 )
 
 // Server wraps the Echo server
@@ -118,7 +117,6 @@ type Config struct {
 	RequestAuthenticators           []ext.RequestAuthenticator             // Optional extension-provided request authentication mechanisms
 	Tagging                         *tagging.Service                       // Optional: request labelling based on configured tagging headers
 	SessionDetector                 *session.Detector                      // Optional: client session identification for sticky routing and audit grouping
-	VersionChecker                  *versioncheck.Checker                  // Optional: daily update check backing GET /version
 }
 
 // ReadinessProbe verifies that a dependency the gateway owns is reachable.
@@ -201,9 +199,6 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 	// Mirror the route-registration default below: a nil config enables realtime
 	// so the documented default and the registered route stay consistent.
 	handler.realtimeEnabled = cfg == nil || cfg.RealtimeEnabled
-	if cfg != nil {
-		handler.versionChecker = cfg.VersionChecker
-	}
 	if cfg != nil {
 		handler.mcpEnabled = cfg.MCPEnabled
 		handler.mcpGateway = cfg.MCPGateway

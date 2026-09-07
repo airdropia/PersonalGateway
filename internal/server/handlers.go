@@ -20,7 +20,6 @@ import (
 	"github.com/airdropia/pgw/internal/responsecache"
 	"github.com/airdropia/pgw/internal/responsestore"
 	"github.com/airdropia/pgw/internal/usage"
-	"github.com/airdropia/pgw/internal/versioncheck"
 )
 
 // Handler holds the HTTP handlers
@@ -58,7 +57,6 @@ type Handler struct {
 	guardrailsHash               string
 	storageProbe                 ReadinessProbe
 	cacheProbe                   ReadinessProbe
-	versionChecker               *versioncheck.Checker
 
 	translatedSvc     *translatedInferenceService // snapshot of handler fields at first use; server.New sets cache/hash before traffic
 	translatedSvcOnce sync.Once

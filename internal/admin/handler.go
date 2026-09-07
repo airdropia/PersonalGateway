@@ -18,13 +18,11 @@ import (
 	"github.com/airdropia/pgw/internal/budget"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/guardrails"
-	"github.com/airdropia/pgw/internal/live"
 	"github.com/airdropia/pgw/internal/modelpreferences"
 	"github.com/airdropia/pgw/internal/pricingoverrides"
 	"github.com/airdropia/pgw/internal/providers"
 	"github.com/airdropia/pgw/internal/providers/health"
 	"github.com/airdropia/pgw/internal/ratelimit"
-	"github.com/airdropia/pgw/internal/runtimesettings"
 	"github.com/airdropia/pgw/internal/tagging"
 	"github.com/airdropia/pgw/internal/usage"
 	"github.com/airdropia/pgw/internal/virtualmodels"
@@ -46,11 +44,9 @@ type Handler struct {
 	budgets             *budget.Service
 	rateLimits          *ratelimit.Service
 	tagging             *tagging.Service
-	runtimeSettings     *runtimesettings.Service
 	guardrails          guardrails.Catalog
 	guardrailDefs       *guardrails.Service
 	modelPreferences    *modelpreferences.Service
-	liveBroker          *live.Broker
 	runtimeConfig       DashboardConfigResponse
 	runtimeRefresher    RuntimeRefresher
 	configuredProviders []providers.SanitizedProviderConfig
@@ -326,13 +322,6 @@ func WithModelPreferences(service *modelpreferences.Service) Option {
 	}
 }
 
-// WithLiveBroker enables realtime dashboard log previews.
-func WithLiveBroker(broker *live.Broker) Option {
-	return func(h *Handler) {
-		h.liveBroker = broker
-	}
-}
-
 // RequestHealthSource supplies windowed real-traffic health per provider,
 // keyed by configured provider name.
 type RequestHealthSource interface {
@@ -358,13 +347,6 @@ func WithDashboardRuntimeConfig(values DashboardConfigResponse) Option {
 func WithRuntimeRefresher(refresher RuntimeRefresher) Option {
 	return func(h *Handler) {
 		h.runtimeRefresher = refresher
-	}
-}
-
-// WithRuntimeSettings enables deployment-wide extension settings.
-func WithRuntimeSettings(settings *runtimesettings.Service) Option {
-	return func(h *Handler) {
-		h.runtimeSettings = settings
 	}
 }
 

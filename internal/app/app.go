@@ -30,7 +30,6 @@ import (
 	"github.com/airdropia/pgw/internal/guardrails"
 	"github.com/airdropia/pgw/internal/filestore"
 	"github.com/airdropia/pgw/internal/httpclient"
-	"github.com/airdropia/pgw/internal/live"
 	"github.com/airdropia/pgw/internal/llmclient"
 	"github.com/airdropia/pgw/internal/mcpgateway"
 	"github.com/airdropia/pgw/internal/modelpreferences"
@@ -40,13 +39,11 @@ import (
 	"github.com/airdropia/pgw/internal/ratelimit"
 	"github.com/airdropia/pgw/internal/responsecache"
 	"github.com/airdropia/pgw/internal/responsestore"
-	"github.com/airdropia/pgw/internal/runtimesettings"
 	"github.com/airdropia/pgw/internal/server"
 	"github.com/airdropia/pgw/internal/session"
 	"github.com/airdropia/pgw/internal/storage"
 	"github.com/airdropia/pgw/internal/tagging"
 	"github.com/airdropia/pgw/internal/usage"
-	"github.com/airdropia/pgw/internal/versioncheck"
 	"github.com/airdropia/pgw/internal/virtualmodels"
 	"github.com/airdropia/pgw/internal/workflows"
 )
@@ -73,11 +70,8 @@ type App struct {
 	guardrails          *guardrails.Result
 	modelPreferences    *modelpreferences.Result
 	workflows           *workflows.Result
-	live                *live.Broker
 	server              *server.Server
 	storage             storage.Storage
-	runtimeSettings     *runtimesettings.Service
-	versionCheck        *versioncheck.Checker
 	extensionAuth       bool
 
 	// registered records every successfully initialized subsystem in
@@ -329,22 +323,11 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		config:        appCfg,
 		extensionAuth: hasUsableRequestAuthenticator(cfg.Extensions),
 	}
-	app.live = live.NewBroker(live.Config{
-		Enabled:     appCfg.Admin.LiveLogsEnabled,
-		BufferSize:  appCfg.Admin.LiveLogsBufferSize,
-		ReplayLimit: appCfg.Admin.LiveLogsReplayLimit,
-		Heartbeat:   time.Duration(appCfg.Admin.LiveLogsHeartbeatSeconds) * time.Second,
-	})
 
 	// Every subsystem registers as it initializes (see subsystems.go): fail
 	// unwinds the registry in reverse construction order before returning an
 	// initialization error, and Shutdown releases the same set in its own
-	// hand-maintained runtime order. The live broker is created above, so it
-	// is the first entry.
-	app.register(subsystemLive, ownedByPrologue, func() error {
-		app.live.Close()
-		return nil
-	})
+	// hand-maintained runtime order.
 	fail := func(msg string, cause error) (*App, error) {
 		closeErr := app.unwind()
 		switch {
@@ -370,18 +353,7 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	app.storage = sharedStorage
 	app.register(subsystemStorage, ownedByShutdown, sharedStorage.Close)
 
-	var registeredSettings []ext.RuntimeSetting
-	if cfg.Extensions != nil {
-		registeredSettings = cfg.Extensions.Settings()
-	}
-	app.runtimeSettings, err = runtimesettings.New(ctx, sharedStorage, registeredSettings)
-	if err != nil {
-		return fail("failed to initialize runtime settings", err)
-	}
-	if app.runtimeSettings != nil {
-		app.register(subsystemRuntimeSettings, ownedByShutdown, app.runtimeSettings.Close)
-	}
-
+	// Track real-traffic outcomes per provider/model for the dashboard's
 	// Track real-traffic outcomes per provider/model for the dashboard's
 	// provider status; hooks must be composed before any provider is created.
 	requestHealth := health.NewTracker()
@@ -728,12 +700,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		}
 	}
 
-	// The update check owns the only outbound connection core makes that is
-	// not a provider call. It is constructed even when disabled so GET
-	// /version keeps reporting the local build.
-	versionChecker := newVersionChecker(appCfg.VersionCheck)
-	app.versionCheck = versionChecker
-
 	serverCfg := &server.Config{
 		BasePath:                        appCfg.Server.BasePath,
 		MasterKey:                       appCfg.Server.MasterKey,
@@ -769,7 +735,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		Tagging:                         taggingResult.Service,
 		SessionDetector:                 session.NewDetectorFromConfig(appCfg.Session),
 		MCPEnabled:                      appCfg.MCP.Enabled,
-		VersionChecker:                  versionChecker,
 	}
 	if mcpResult != nil {
 		serverCfg.MCPGateway = mcpResult.Service
@@ -801,7 +766,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		slog.Warn("ADMIN_UI_ENABLED=true requires ADMIN_ENDPOINTS_ENABLED=true — forcing UI to disabled")
 		adminCfg.UIEnabled = false
 	}
-	livePublishersEnabled := false
 	usageEnabledForDashboard := usageResult.Logger.Config().Enabled
 	if adminCfg.EndpointsEnabled {
 		adminRuntimeConfig := dashboardRuntimeConfig(appCfg, usageEnabledForDashboard, cfg.DemoMode, routeSelector != nil)
@@ -821,13 +785,11 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 			budgetResult.Service,
 			rateLimitResult.Service,
 			taggingResult.Service,
-			app.runtimeSettings,
 			mcpResult,
 			app.providerCredentials,
 			app,
 			adminRuntimeConfig,
 			quotaTemplatesEnabled,
-			app.live,
 			requestHealth,
 			usagePricingRecalculationConfigured(appCfg),
 			appCfg.Server.BasePath,
@@ -839,7 +801,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 			serverCfg.AdminEndpointsEnabled = true
 			serverCfg.AdminHandler = adminHandler
 			serverCfg.AuditReader = auditReader
-			livePublishersEnabled = true
 			slog.Info("admin API enabled",
 				"api", config.JoinBasePath(appCfg.Server.BasePath, "/admin"),
 				"legacy_alias", config.JoinBasePath(appCfg.Server.BasePath, "/admin/api/v1"),
@@ -899,9 +860,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		return fail("failed to refresh workflows after wiring internal guardrail executor", err)
 	}
 
-	if livePublishersEnabled {
-		app.attachLivePublishers()
-	}
 	app.server = server.New(provider, serverCfg)
 
 	// Registries are reused across reload generations, so their authenticators
@@ -935,26 +893,6 @@ func (a *App) UsageLogger() usage.LoggerInterface {
 		return nil
 	}
 	return a.usage.Logger
-}
-
-func (a *App) attachLivePublishers() {
-	if a == nil || a.live == nil || !a.live.Enabled() {
-		return
-	}
-	if a.audit != nil {
-		if logger, ok := a.audit.Logger.(interface {
-			SetLivePublisher(auditlog.LiveEventPublisher)
-		}); ok {
-			logger.SetLivePublisher(a.live)
-		}
-	}
-	if a.usage != nil {
-		if logger, ok := a.usage.Logger.(interface {
-			SetLivePublisher(usage.LiveEventPublisher)
-		}); ok {
-			logger.SetLivePublisher(a.live)
-		}
-	}
 }
 
 func providerAsNativeFileRouter(provider core.RoutableProvider) core.NativeFileRoutableProvider {
@@ -1007,9 +945,6 @@ func (a *App) startServer(ctx context.Context, address string, start func(contex
 	if a.rateLimits != nil && a.rateLimits.Service != nil {
 		a.rateLimits.Service.Start(ctx)
 	}
-	if a.versionCheck.Enabled() {
-		go a.versionCheck.Run(serverCtx)
-	}
 
 	slog.Info("starting server", "address", address)
 	err := start(serverCtx)
@@ -1060,9 +995,6 @@ func (a *App) Shutdown(ctx context.Context) error {
 	// alive here makes Echo wait until its graceful-shutdown timeout.
 	if a.mcpGateway != nil && a.mcpGateway.Service != nil {
 		a.mcpGateway.Service.Close()
-	}
-	if a.live != nil {
-		a.live.Close()
 	}
 
 	// Stop accepting new requests and wait for in-flight requests to finish.
@@ -1257,13 +1189,11 @@ func initAdmin(
 	budgetService *budget.Service,
 	rateLimitService *ratelimit.Service,
 	taggingService *tagging.Service,
-	runtimeSettingsService *runtimesettings.Service,
 	mcpResult *mcpgateway.Result,
 	providerCredentialsResult *providers.CredentialsResult,
 	runtimeRefresher admin.RuntimeRefresher,
 	runtimeConfig admin.DashboardConfigResponse,
 	quotaTemplatesEnabled bool,
-	liveBroker *live.Broker,
 	requestHealth admin.RequestHealthSource,
 	usagePricingRecalculationEnabled bool,
 	basePath string,
@@ -1321,12 +1251,10 @@ func initAdmin(
 		admin.WithRateLimits(rateLimitService),
 		admin.WithQuotaTemplatesEnabled(quotaTemplatesEnabled),
 		admin.WithTagging(taggingService),
-		admin.WithRuntimeSettings(runtimeSettingsService),
 		mcpOption,
 		providerCredentialsOption,
 		admin.WithRuntimeRefresher(runtimeRefresher),
 		admin.WithDashboardRuntimeConfig(runtimeConfig),
-		admin.WithLiveBroker(liveBroker),
 		admin.WithRequestHealth(requestHealth),
 	)
 

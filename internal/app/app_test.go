@@ -20,7 +20,6 @@ import (
 	"github.com/airdropia/pgw/internal/admin"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/guardrails"
-	"github.com/airdropia/pgw/internal/live"
 	"github.com/airdropia/pgw/internal/llmclient"
 	"github.com/airdropia/pgw/internal/providers"
 	"github.com/airdropia/pgw/internal/server"
@@ -170,49 +169,6 @@ func (m *runtimeRefreshMockProvider) StreamResponses(_ context.Context, _ *core.
 
 func (m *runtimeRefreshMockProvider) Embeddings(_ context.Context, _ *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
 	return nil, core.NewInvalidRequestError("not supported", nil)
-}
-
-func TestShutdownClosesLiveStreamsBeforeWaitingForServer(t *testing.T) {
-	broker := live.NewBroker(live.Config{Enabled: true})
-	sub := broker.Subscribe(0)
-	if sub == nil {
-		t.Fatal("Subscribe returned nil")
-	}
-
-	stopped := make(chan struct{})
-	serverDone := make(chan error)
-	subscriberClosed := make(chan bool, 1)
-
-	app := &App{
-		live: broker,
-		serverStop: func() {
-			close(stopped)
-		},
-		serverDone: serverDone,
-	}
-
-	go func() {
-		<-stopped
-		_, ok := <-sub.Events
-		subscriberClosed <- !ok
-		serverDone <- nil
-	}()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer cancel()
-	if err := app.Shutdown(ctx); err != nil {
-		broker.Close()
-		t.Fatalf("Shutdown() error = %v", err)
-	}
-
-	select {
-	case closed := <-subscriberClosed:
-		if !closed {
-			t.Fatal("live subscriber remained open")
-		}
-	default:
-		t.Fatal("server stopped before live subscriber closure was observed")
-	}
 }
 
 func TestRefreshRuntime_RefreshesModelListProvidersAndRegistryCache(t *testing.T) {
