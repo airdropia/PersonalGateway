@@ -13,11 +13,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/airdropia/pgw/internal/core"
-	"github.com/airdropia/pgw/internal/llmclient"
 	"github.com/airdropia/pgw/internal/providers"
 )
 
@@ -27,6 +25,12 @@ import (
 // type for custom providers.
 const Type = "openai-compatible"
 
+// defaultBaseURL is the fallback used when the operator does not supply
+// a base_url. It is kept local to the constructor (rather than read back
+// from the Registration var) to avoid a Go package-initialization cycle
+// between the Registration literal and the constructor.
+const defaultBaseURL = "https://api.openai.com/v1"
+
 // Registration is the factory hook for the generic adapter. Discovery
 // matches the plain OpenAI shape; DefaultBaseURL ends in /v1 so the
 // gateway's /v1/models discovery call works without further surgery.
@@ -34,7 +38,7 @@ var Registration = providers.Registration{
 	Type: Type,
 	New:  New,
 	Discovery: providers.DiscoveryConfig{
-		DefaultBaseURL:  "https://api.openai.com/v1",
+		DefaultBaseURL:  defaultBaseURL,
 		RequireBaseURL:  true,
 		AllowAPIKeyless: false,
 	},
@@ -46,23 +50,14 @@ var Registration = providers.Registration{
 // has no provider-specific behaviour beyond authenticating with the
 // caller's api key.
 type Adapter struct {
-	name    string
 	baseURL string
-	apiKey  string
 	keys    *providers.Keyring
-	hooks   llmclient.Hooks
 	client  *http.Client
 }
 
 // New constructs an Adapter from a factory-resolved ProviderConfig.
 // It does not perform any I/O at construction time; ListModels, Chat
 // completion, etc. open HTTP on demand.
-// defaultBaseURL is the fallback used when the operator does not supply
-// a base_url. It is kept local to New (rather than read back from the
-// Registration var) to avoid a Go package-initialization cycle between
-// the Registration literal and the constructor.
-const defaultBaseURL = "https://api.openai.com/v1"
-
 func New(cfg providers.ProviderConfig, opts providers.ProviderOptions) core.Provider {
 	baseURL := providers.ResolveBaseURL(cfg.BaseURL, defaultBaseURL)
 	// Ensure the base URL ends in /v1 so the path-joined endpoints below
@@ -73,19 +68,13 @@ func New(cfg providers.ProviderConfig, opts providers.ProviderOptions) core.Prov
 		baseURL = baseURL + "/v1"
 	}
 	return &Adapter{
-		name:    cfg.Name,
 		baseURL: baseURL,
-		apiKey:  cfg.APIKey,
 		keys:    opts.Keyring(cfg.APIKey),
-		hooks:   opts.Hooks,
 		client:  &http.Client{},
 	}
 }
 
-// listResponse mirrors the OpenAI /v1/models response body. Each Model
-// is the minimum the gateway needs to render the Models page; richer
-// fields are kept under Raw so heuristics can fall through to the
-// provider's own metadata shape (plan §2.3).
+// listResponse mirrors the OpenAI /v1/models response body.
 type listResponse struct {
 	Object string `json:"object"`
 	Data   []struct {
@@ -93,10 +82,6 @@ type listResponse struct {
 		Object  string `json:"object"`
 		Created int64  `json:"created"`
 		OwnedBy string `json:"owned_by"`
-		// Raw keeps the full upstream JSON for this model so heuristic
-		// extraction (plan §2.3) can read non-standard fields without
-		// forcing the gateway to know every provider's schema.
-		Raw map[string]any `json:"-"`
 	} `json:"data"`
 }
 
@@ -137,33 +122,74 @@ func (a *Adapter) ListModels(ctx context.Context) (*core.ModelsResponse, error) 
 	return out, nil
 }
 
-// ChatCompletion forwards the request body unchanged to
-// {base_url}/chat/completions and returns the parsed upstream response.
-// No provider-specific transformation is applied.
-func (a *Adapter) ChatCompletion(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
-	body, err := encodeJSON(req)
+// postJSON sends a POST of payload to the given endpoint, authenticates
+// it, checks the upstream status, and decodes the response body into
+// out. It is the shared spine of every non-streaming OpenAI-compatible
+// surface the adapter implements (chat completions, responses,
+// embeddings); each public method supplies its own endpoint and decode
+// target. Stage 5 removes the responses/embeddings callers, at which
+// point this helper shrinks with them.
+func (a *Adapter) postJSON(ctx context.Context, endpoint string, payload any, out any) error {
+	body, err := encodeJSON(payload)
 	if err != nil {
-		return nil, fmt.Errorf("encode chat completion: %w", err)
+		return fmt.Errorf("encode %s: %w", endpoint, err)
 	}
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/chat/completions", bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/"+endpoint, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("build chat completion: %w", err)
+		return fmt.Errorf("build %s: %w", endpoint, err)
 	}
 	a.applyAuth(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	resp, err := a.client.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("call chat completions: %w", err)
+		return fmt.Errorf("call %s: %w", endpoint, err)
 	}
 	defer drainAndClose(resp.Body)
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("upstream chat completions returned %d", resp.StatusCode)
+		return fmt.Errorf("upstream %s returned %d", endpoint, resp.StatusCode)
 	}
+	if err := decodeJSON(resp.Body, out); err != nil {
+		return fmt.Errorf("decode %s: %w", endpoint, err)
+	}
+	return nil
+}
+
+// postStream sends a POST of payload to the given endpoint with
+// stream=true and Accept: text/event-stream, and returns the raw SSE
+// body. The caller is responsible for closing the body.
+func (a *Adapter) postStream(ctx context.Context, endpoint string, payload any) (io.ReadCloser, error) {
+	body, err := encodeJSON(payload)
+	if err != nil {
+		return nil, fmt.Errorf("encode %s: %w", endpoint, err)
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/"+endpoint, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("build %s: %w", endpoint, err)
+	}
+	a.applyAuth(httpReq)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "text/event-stream")
+
+	resp, err := a.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("call %s: %w", endpoint, err)
+	}
+	if resp.StatusCode >= 400 {
+		defer drainAndClose(resp.Body)
+		return nil, fmt.Errorf("upstream %s returned %d", endpoint, resp.StatusCode)
+	}
+	return resp.Body, nil
+}
+
+// ChatCompletion forwards the request body unchanged to
+// {base_url}/chat/completions and returns the parsed upstream response.
+// No provider-specific transformation is applied.
+func (a *Adapter) ChatCompletion(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
 	var out core.ChatResponse
-	if err := decodeJSON(resp.Body, &out); err != nil {
-		return nil, fmt.Errorf("decode chat completions: %w", err)
+	if err := a.postJSON(ctx, "chat/completions", req, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
@@ -174,30 +200,7 @@ func (a *Adapter) StreamChatCompletion(ctx context.Context, req *core.ChatReques
 	if req == nil {
 		return nil, errors.New("nil chat request")
 	}
-	// Force stream=true on the upstream request so the upstream emits SSE.
-	streamReq := *req
-	streamReq.Stream = true
-	body, err := encodeJSON(&streamReq)
-	if err != nil {
-		return nil, fmt.Errorf("encode stream request: %w", err)
-	}
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/chat/completions", bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("build stream request: %w", err)
-	}
-	a.applyAuth(httpReq)
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Accept", "text/event-stream")
-
-	resp, err := a.client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("call stream chat completions: %w", err)
-	}
-	if resp.StatusCode >= 400 {
-		defer drainAndClose(resp.Body)
-		return nil, fmt.Errorf("upstream stream chat completions returned %d", resp.StatusCode)
-	}
-	return resp.Body, nil
+	return a.postStream(ctx, "chat/completions", req.WithStreaming())
 }
 
 // Responses forwards to {base_url}/responses. Stage 5 removes the
@@ -205,29 +208,9 @@ func (a *Adapter) StreamChatCompletion(ctx context.Context, req *core.ChatReques
 // the adapter; until then the gateway can already reach it for callers
 // who insist on the Responses shape.
 func (a *Adapter) Responses(ctx context.Context, req *core.ResponsesRequest) (*core.ResponsesResponse, error) {
-	body, err := encodeJSON(req)
-	if err != nil {
-		return nil, fmt.Errorf("encode responses: %w", err)
-	}
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/responses", bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("build responses: %w", err)
-	}
-	a.applyAuth(httpReq)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := a.client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("call responses: %w", err)
-	}
-	defer drainAndClose(resp.Body)
-
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("upstream responses returned %d", resp.StatusCode)
-	}
 	var out core.ResponsesResponse
-	if err := decodeJSON(resp.Body, &out); err != nil {
-		return nil, fmt.Errorf("decode responses: %w", err)
+	if err := a.postJSON(ctx, "responses", req, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
@@ -240,55 +223,15 @@ func (a *Adapter) StreamResponses(ctx context.Context, req *core.ResponsesReques
 	}
 	streamReq := *req
 	streamReq.Stream = true
-	body, err := encodeJSON(&streamReq)
-	if err != nil {
-		return nil, fmt.Errorf("encode stream responses: %w", err)
-	}
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/responses", bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("build stream responses: %w", err)
-	}
-	a.applyAuth(httpReq)
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Accept", "text/event-stream")
-
-	resp, err := a.client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("call stream responses: %w", err)
-	}
-	if resp.StatusCode >= 400 {
-		defer drainAndClose(resp.Body)
-		return nil, fmt.Errorf("upstream stream responses returned %d", resp.StatusCode)
-	}
-	return resp.Body, nil
+	return a.postStream(ctx, "responses", &streamReq)
 }
 
 // Embeddings forwards to {base_url}/embeddings. Stage 4 removes the
 // /v1/embeddings endpoint, at which point this method is dropped.
 func (a *Adapter) Embeddings(ctx context.Context, req *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
-	body, err := encodeJSON(req)
-	if err != nil {
-		return nil, fmt.Errorf("encode embeddings: %w", err)
-	}
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/embeddings", bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("build embeddings: %w", err)
-	}
-	a.applyAuth(httpReq)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := a.client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("call embeddings: %w", err)
-	}
-	defer drainAndClose(resp.Body)
-
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("upstream embeddings returned %d", resp.StatusCode)
-	}
 	var out core.EmbeddingResponse
-	if err := decodeJSON(resp.Body, &out); err != nil {
-		return nil, fmt.Errorf("decode embeddings: %w", err)
+	if err := a.postJSON(ctx, "embeddings", req, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
@@ -300,18 +243,6 @@ func (a *Adapter) applyAuth(req *http.Request) {
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+a.keys.Primary())
-}
-
-// joinURL appends path to baseURL, ensuring exactly one slash between
-// them. Reserved for future endpoints; current methods inline the join
-// for clarity.
-func joinURL(baseURL, path string) (string, error) {
-	u, err := url.Parse(baseURL)
-	if err != nil {
-		return "", err
-	}
-	u.Path = strings.TrimRight(u.Path, "/") + "/" + strings.TrimLeft(path, "/")
-	return u.String(), nil
 }
 
 // nonEmpty returns s unless it is empty, in which case it returns def.
