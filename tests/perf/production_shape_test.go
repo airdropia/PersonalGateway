@@ -8,13 +8,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/providers"
-	"github.com/enterpilot/gomodel/internal/ratelimit"
-	"github.com/enterpilot/gomodel/internal/server"
-	"github.com/enterpilot/gomodel/internal/session"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/auditlog"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/providers"
+	"github.com/airdropia/pgw/internal/ratelimit"
+	"github.com/airdropia/pgw/internal/server"
+	"github.com/airdropia/pgw/internal/session"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 // benchRateLimitStore is a minimal in-memory ratelimit.Store carrying one

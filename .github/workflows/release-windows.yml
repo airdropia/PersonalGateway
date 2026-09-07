@@ -72,9 +72,9 @@ jobs:
           # so the gateway can self-report it via --version.
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
             go build -trimpath -ldflags "-s -w \
-              -X github.com/enterpilot/gomodel/internal/version.Version=${VERSION} \
-              -X github.com/enterpilot/gomodel/internal/version.Commit=${COMMIT} \
-              -X github.com/enterpilot/gomodel/internal/version.Date=${DATE}" \
+              -X github.com/airdropia/pgw/internal/version.Version=${VERSION} \
+              -X github.com/airdropia/pgw/internal/version.Commit=${COMMIT} \
+              -X github.com/airdropia/pgw/internal/version.Date=${DATE}" \
             -o personal-gateway.exe ./cmd/gomodel
 
       - name: Stage release payload

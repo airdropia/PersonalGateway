@@ -3,7 +3,7 @@ package server
 import (
 	"sync"
 
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 type usageCaptureLogger struct {

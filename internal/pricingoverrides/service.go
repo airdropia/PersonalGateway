@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/modelselectors"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/modelselectors"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 // Service keeps pricing overrides cached in memory and resolves effective pricing.

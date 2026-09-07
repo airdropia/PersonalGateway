@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/batchrewrite"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/gateway"
+	"github.com/airdropia/pgw/internal/batchrewrite"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/gateway"
 )
 
 // BatchRequestPreparer rewrites a native batch request before provider

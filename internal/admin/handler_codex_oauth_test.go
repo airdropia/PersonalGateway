@@ -15,7 +15,7 @@ import (
 	"time"
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/codexoauth"
+	"github.com/airdropia/pgw/internal/codexoauth"
 )
 
 // fakeCodexOAuthService is the in-memory service stub. It records every

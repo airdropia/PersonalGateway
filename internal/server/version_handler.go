@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/version"
-	"github.com/enterpilot/gomodel/internal/versioncheck"
+	"github.com/airdropia/pgw/internal/version"
+	"github.com/airdropia/pgw/internal/versioncheck"
 
 	"github.com/labstack/echo/v5"
 )

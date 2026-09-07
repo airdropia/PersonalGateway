@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/enterpilot/gomodel/internal/llmclient"
+	"github.com/airdropia/pgw/internal/llmclient"
 )
 
 func newTestTracker(start time.Time) (*Tracker, *time.Time) {

@@ -12,8 +12,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/streaming"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/streaming"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 func TestSlowedStreamRecordsUsageConsumedBeforeClientCancellation(t *testing.T) {

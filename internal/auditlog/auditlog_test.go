@@ -17,8 +17,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/streaming"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/streaming"
 
 	"github.com/andybalholm/brotli"
 	"github.com/labstack/echo/v5"

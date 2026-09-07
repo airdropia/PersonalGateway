@@ -8,8 +8,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/codexoauth"
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/codexoauth"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // codexOAuthStartRequest is the body the dashboard sends to begin a

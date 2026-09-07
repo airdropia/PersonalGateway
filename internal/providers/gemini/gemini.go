@@ -19,11 +19,11 @@ import (
 	"github.com/goccy/go-json"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/httpclient"
-	"github.com/enterpilot/gomodel/internal/llmclient"
-	"github.com/enterpilot/gomodel/internal/providers"
-	"github.com/enterpilot/gomodel/internal/providers/googlecommon"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/httpclient"
+	"github.com/airdropia/pgw/internal/llmclient"
+	"github.com/airdropia/pgw/internal/providers"
+	"github.com/airdropia/pgw/internal/providers/googlecommon"
 )
 
 // Registration provides factory registration for the Gemini provider.

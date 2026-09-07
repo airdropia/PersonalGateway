@@ -10,8 +10,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/workflows"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/workflows"
 )
 
 type createWorkflowRequest struct {

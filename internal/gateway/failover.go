@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // FailoverSelectors returns failover selectors for a translated workflow.

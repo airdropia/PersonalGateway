@@ -3,7 +3,7 @@ package modeldata
 import (
 	"maps"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // MergeMetadata merges override onto base field-wise. Non-zero override fields

@@ -3,7 +3,7 @@ package modeldata
 import (
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // Categories are derived data: an operator declaring modes in config must get

@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	goconfig "github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/core"
+	goconfig "github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func TestClient_Do_Success(t *testing.T) {

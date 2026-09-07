@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/storage"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // SQLite allows 999 bindable parameters per statement

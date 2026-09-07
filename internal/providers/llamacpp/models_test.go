@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/llmclient"
-	"github.com/enterpilot/gomodel/internal/providers"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/llmclient"
+	"github.com/airdropia/pgw/internal/providers"
 )
 
 // legacyListing is the /v1/models payload of builds whose meta object predates

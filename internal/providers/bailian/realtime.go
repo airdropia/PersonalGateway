@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // RealtimeTarget implements core.RealtimeProvider for Alibaba Cloud Bailian /

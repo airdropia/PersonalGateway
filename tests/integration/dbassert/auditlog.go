@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/enterpilot/gomodel/internal/auditlog"
+	"github.com/airdropia/pgw/internal/auditlog"
 )
 
 // AuditLogEntry mirrors auditlog.LogEntry for test assertions.

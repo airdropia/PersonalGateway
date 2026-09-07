@@ -6,7 +6,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // FromChatResponse renders a canonical chat response in the Anthropic Messages

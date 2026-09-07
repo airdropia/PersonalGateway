@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/version"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/version"
 
 	"github.com/labstack/echo/v5"
 )

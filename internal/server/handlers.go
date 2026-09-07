@@ -8,19 +8,19 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/anthropicapi"
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	batchstore "github.com/enterpilot/gomodel/internal/batch"
-	"github.com/enterpilot/gomodel/internal/conversationstore"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/filestore"
-	"github.com/enterpilot/gomodel/internal/httpclient"
-	"github.com/enterpilot/gomodel/internal/mcpgateway"
-	"github.com/enterpilot/gomodel/internal/realtime"
-	"github.com/enterpilot/gomodel/internal/responsecache"
-	"github.com/enterpilot/gomodel/internal/responsestore"
-	"github.com/enterpilot/gomodel/internal/usage"
-	"github.com/enterpilot/gomodel/internal/versioncheck"
+	"github.com/airdropia/pgw/internal/anthropicapi"
+	"github.com/airdropia/pgw/internal/auditlog"
+	batchstore "github.com/airdropia/pgw/internal/batch"
+	"github.com/airdropia/pgw/internal/conversationstore"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/filestore"
+	"github.com/airdropia/pgw/internal/httpclient"
+	"github.com/airdropia/pgw/internal/mcpgateway"
+	"github.com/airdropia/pgw/internal/realtime"
+	"github.com/airdropia/pgw/internal/responsecache"
+	"github.com/airdropia/pgw/internal/responsestore"
+	"github.com/airdropia/pgw/internal/usage"
+	"github.com/airdropia/pgw/internal/versioncheck"
 )
 
 // Handler holds the HTTP handlers

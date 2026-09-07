@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/gateway"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/gateway"
 )
 
 // RequestWorkflowPolicyResolver matches persisted workflow versions for requests.

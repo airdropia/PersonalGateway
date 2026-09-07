@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/enterpilot/gomodel/internal/modelselectors"
+	"github.com/airdropia/pgw/internal/modelselectors"
 )
 
 // ErrNotFound indicates that a preference row does not exist.

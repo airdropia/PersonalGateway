@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // SQLStore stores model preferences in SQLite or PostgreSQL through sqlx.

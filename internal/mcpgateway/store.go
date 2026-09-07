@@ -11,7 +11,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/enterpilot/gomodel/config"
+	"github.com/airdropia/pgw/config"
 )
 
 // ErrNotFound indicates a requested managed MCP server was not found.

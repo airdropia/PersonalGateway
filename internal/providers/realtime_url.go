@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // OpenAIRealtimeURL derives an OpenAI-style realtime websocket URL from an

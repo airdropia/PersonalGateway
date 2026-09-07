@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/versioncheck"
+	"github.com/airdropia/pgw/internal/versioncheck"
 )
 
 // versionTestServer wires a gateway whose update check reads manifests from a

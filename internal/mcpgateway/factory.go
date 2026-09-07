@@ -9,11 +9,11 @@ import (
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/httpclient"
-	"github.com/enterpilot/gomodel/internal/storage"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/httpclient"
+	"github.com/airdropia/pgw/internal/storage"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 // Result holds the initialized MCP gateway and any owned resources.

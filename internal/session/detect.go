@@ -8,7 +8,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/tidwall/gjson"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // Detector resolves the session id for a request. Explicit header rules win

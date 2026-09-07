@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/version"
+	"github.com/airdropia/pgw/internal/version"
 )
 
 // maxManifestBytes bounds what a manifest response can cost us. A version

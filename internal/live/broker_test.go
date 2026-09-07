@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/auditlog"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 func TestBrokerPublishesAndReplaysBySequence(t *testing.T) {

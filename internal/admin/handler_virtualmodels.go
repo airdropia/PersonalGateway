@@ -7,8 +7,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/virtualmodels"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/virtualmodels"
 )
 
 // upsertVirtualModelRequest is the unified admin upsert contract. Presence of

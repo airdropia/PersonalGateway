@@ -10,9 +10,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/llmclient"
-	"github.com/enterpilot/gomodel/internal/providers/groq"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/llmclient"
+	"github.com/airdropia/pgw/internal/providers/groq"
 )
 
 func newGroqReplayProvider(t *testing.T, routes map[string]replayRoute) core.Provider {

@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/llmclient"
-	"github.com/enterpilot/gomodel/internal/providers/gemini"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/llmclient"
+	"github.com/airdropia/pgw/internal/providers/gemini"
 )
 
 func newGeminiReplayProvider(t *testing.T, routes map[string]replayRoute) core.Provider {

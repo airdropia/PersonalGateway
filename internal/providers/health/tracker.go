@@ -20,7 +20,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/enterpilot/gomodel/internal/llmclient"
+	"github.com/airdropia/pgw/internal/llmclient"
 )
 
 const (

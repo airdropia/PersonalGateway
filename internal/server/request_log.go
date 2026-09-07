@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 	"github.com/labstack/echo/v5"
 )
 

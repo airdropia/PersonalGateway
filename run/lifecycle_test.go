@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/server"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/server"
 )
 
 type stubLifecycleApp struct {

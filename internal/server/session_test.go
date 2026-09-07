@@ -11,9 +11,9 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/session"
+	"github.com/airdropia/pgw/internal/auditlog"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/session"
 )
 
 type partialErrorReadCloser struct {

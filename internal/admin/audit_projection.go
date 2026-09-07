@@ -1,6 +1,6 @@
 package admin
 
-import "github.com/enterpilot/gomodel/internal/auditlog"
+import "github.com/airdropia/pgw/internal/auditlog"
 
 // Audit list projection.
 //

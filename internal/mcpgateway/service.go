@@ -13,9 +13,9 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/usage"
-	"github.com/enterpilot/gomodel/internal/version"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/usage"
+	"github.com/airdropia/pgw/internal/version"
 )
 
 // sessionIdleTimeout closes downstream sessions that stop sending requests,

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	batchstore "github.com/enterpilot/gomodel/internal/batch"
-	"github.com/enterpilot/gomodel/internal/core"
+	batchstore "github.com/airdropia/pgw/internal/batch"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 var batchResultsPending404Providers = map[string]struct{}{

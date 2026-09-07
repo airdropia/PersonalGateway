@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // sqlRateLimitsSchema is the one source of the table shape, shared by fresh

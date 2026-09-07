@@ -12,10 +12,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/anthropicapi"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/llmclient"
-	"github.com/enterpilot/gomodel/internal/providers"
+	"github.com/airdropia/pgw/internal/anthropicapi"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/llmclient"
+	"github.com/airdropia/pgw/internal/providers"
 )
 
 func TestNew(t *testing.T) {

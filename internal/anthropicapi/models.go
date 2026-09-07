@@ -3,7 +3,7 @@ package anthropicapi
 import (
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // ModelsList is the Anthropic /v1/models response body.

@@ -14,8 +14,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/cache"
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/cache"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 var benchmarkStreamingBody = []byte(`{"model":"gpt-4","stream":true,"messages":[{"role":"user","content":"hi"}]}`)

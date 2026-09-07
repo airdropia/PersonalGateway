@@ -16,10 +16,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/providers"
-	"github.com/enterpilot/gomodel/internal/server"
+	"github.com/airdropia/pgw/internal/auditlog"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/providers"
+	"github.com/airdropia/pgw/internal/server"
 )
 
 // mockLogStore is an in-memory log store for testing

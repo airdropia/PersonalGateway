@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 type recordingLogger struct {

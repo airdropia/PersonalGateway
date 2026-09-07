@@ -13,9 +13,9 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 // newTestUpstream serves a real MCP server over streamable HTTP and returns

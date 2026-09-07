@@ -25,10 +25,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/ext"
-	"github.com/enterpilot/gomodel/internal/app"
-	"github.com/enterpilot/gomodel/internal/version"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/ext"
+	"github.com/airdropia/pgw/internal/app"
+	"github.com/airdropia/pgw/internal/version"
 )
 
 var shutdownTimeout = 30 * time.Second

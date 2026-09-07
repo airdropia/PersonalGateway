@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // assertCredentialField requires err to be a field-scoped rejection naming

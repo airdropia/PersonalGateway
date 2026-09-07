@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/enterpilot/gomodel/config"
+	"github.com/airdropia/pgw/config"
 )
 
 func TestRunVersionSkipsSetup(t *testing.T) {

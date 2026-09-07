@@ -10,10 +10,10 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/ext"
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	"github.com/enterpilot/gomodel/internal/authkeys"
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/ext"
+	"github.com/airdropia/pgw/internal/auditlog"
+	"github.com/airdropia/pgw/internal/authkeys"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // BearerTokenAuthenticator authenticates managed bearer tokens and returns

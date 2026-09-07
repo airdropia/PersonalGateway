@@ -8,14 +8,14 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/authkeys"
-	"github.com/enterpilot/gomodel/internal/budget"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/guardrails"
-	"github.com/enterpilot/gomodel/internal/pricingoverrides"
-	"github.com/enterpilot/gomodel/internal/ratelimit"
-	"github.com/enterpilot/gomodel/internal/virtualmodels"
-	"github.com/enterpilot/gomodel/internal/workflows"
+	"github.com/airdropia/pgw/internal/authkeys"
+	"github.com/airdropia/pgw/internal/budget"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/guardrails"
+	"github.com/airdropia/pgw/internal/pricingoverrides"
+	"github.com/airdropia/pgw/internal/ratelimit"
+	"github.com/airdropia/pgw/internal/virtualmodels"
+	"github.com/airdropia/pgw/internal/workflows"
 )
 
 func budgetServiceError(message string, err error) error {

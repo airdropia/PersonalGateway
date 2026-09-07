@@ -15,8 +15,8 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/llmclient"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/llmclient"
 )
 
 func parseOptionalUnix(ts string) *int64 {

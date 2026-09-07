@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // Target is one concrete (provider, model) destination of a redirect.

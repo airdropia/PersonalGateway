@@ -15,17 +15,17 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/ext"
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	"github.com/enterpilot/gomodel/internal/conversationstore"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/gateway"
-	"github.com/enterpilot/gomodel/internal/llmclient"
-	"github.com/enterpilot/gomodel/internal/observability"
-	"github.com/enterpilot/gomodel/internal/responsecache"
-	"github.com/enterpilot/gomodel/internal/responsestore"
-	"github.com/enterpilot/gomodel/internal/streaming"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/ext"
+	"github.com/airdropia/pgw/internal/auditlog"
+	"github.com/airdropia/pgw/internal/conversationstore"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/gateway"
+	"github.com/airdropia/pgw/internal/llmclient"
+	"github.com/airdropia/pgw/internal/observability"
+	"github.com/airdropia/pgw/internal/responsecache"
+	"github.com/airdropia/pgw/internal/responsestore"
+	"github.com/airdropia/pgw/internal/streaming"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 // translatedInferenceService adapts Echo requests to the transport-independent

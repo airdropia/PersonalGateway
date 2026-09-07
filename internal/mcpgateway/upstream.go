@@ -17,7 +17,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/enterpilot/gomodel/internal/version"
+	"github.com/airdropia/pgw/internal/version"
 )
 
 // connectTimeout bounds one upstream dial + initialize handshake.

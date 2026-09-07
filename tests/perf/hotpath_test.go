@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/providers"
-	"github.com/enterpilot/gomodel/internal/server"
-	"github.com/enterpilot/gomodel/internal/streaming"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/auditlog"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/providers"
+	"github.com/airdropia/pgw/internal/server"
+	"github.com/airdropia/pgw/internal/streaming"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 const (

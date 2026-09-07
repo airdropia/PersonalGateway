@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // ResolveFailovers returns the failover chain for a request that resolved

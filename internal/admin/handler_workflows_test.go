@@ -12,10 +12,10 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/guardrails"
-	"github.com/enterpilot/gomodel/internal/providers"
-	"github.com/enterpilot/gomodel/internal/workflows"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/guardrails"
+	"github.com/airdropia/pgw/internal/providers"
+	"github.com/airdropia/pgw/internal/workflows"
 )
 
 // WithGuardrailsRegistry enables listing valid guardrail references for

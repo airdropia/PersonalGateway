@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/cache/modelcache"
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/cache/modelcache"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 type mockInitCache struct {

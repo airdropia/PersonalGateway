@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/llmclient"
+	"github.com/airdropia/pgw/internal/llmclient"
 )
 
 const converseEndpoint = "Converse"

@@ -13,10 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/ratelimit"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
-	"github.com/enterpilot/gomodel/internal/virtualmodels"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/ratelimit"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/virtualmodels"
 )
 
 // staticFailoverResolver returns a fixed selector list, standing in for the

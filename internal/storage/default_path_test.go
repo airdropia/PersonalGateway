@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/platformdir"
+	"github.com/airdropia/pgw/internal/platformdir"
 )
 
 func TestDefaultSQLitePath(t *testing.T) {

@@ -1,18 +1,18 @@
 package run
 
 import (
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/observability"
-	"github.com/enterpilot/gomodel/internal/providers"
-	"github.com/enterpilot/gomodel/internal/providers/anthropic"
-	"github.com/enterpilot/gomodel/internal/providers/azure"
-	"github.com/enterpilot/gomodel/internal/providers/bedrock"
-	"github.com/enterpilot/gomodel/internal/providers/chatgpt"
-	"github.com/enterpilot/gomodel/internal/providers/gemini"
-	"github.com/enterpilot/gomodel/internal/providers/groq"
-	"github.com/enterpilot/gomodel/internal/providers/openai"
-	"github.com/enterpilot/gomodel/internal/providers/opencodego"
-	"github.com/enterpilot/gomodel/internal/providers/xai"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/observability"
+	"github.com/airdropia/pgw/internal/providers"
+	"github.com/airdropia/pgw/internal/providers/anthropic"
+	"github.com/airdropia/pgw/internal/providers/azure"
+	"github.com/airdropia/pgw/internal/providers/bedrock"
+	"github.com/airdropia/pgw/internal/providers/chatgpt"
+	"github.com/airdropia/pgw/internal/providers/gemini"
+	"github.com/airdropia/pgw/internal/providers/groq"
+	"github.com/airdropia/pgw/internal/providers/openai"
+	"github.com/airdropia/pgw/internal/providers/opencodego"
+	"github.com/airdropia/pgw/internal/providers/xai"
 )
 
 // defaultProviderFactory builds the provider factory with the providers the

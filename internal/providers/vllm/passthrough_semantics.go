@@ -1,6 +1,6 @@
 package vllm
 
-import "github.com/enterpilot/gomodel/internal/providers"
+import "github.com/airdropia/pgw/internal/providers"
 
 var passthroughSemanticEnricher = providers.NewSemanticEnricher("vllm", map[string]providers.PassthroughEndpointSemantics{
 	"/chat/completions": {Operation: "vllm.chat_completions", GenAIOperation: "chat", AuditPath: "/v1/chat/completions"},

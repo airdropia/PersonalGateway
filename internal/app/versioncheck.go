@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/version"
-	"github.com/enterpilot/gomodel/internal/versioncheck"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/version"
+	"github.com/airdropia/pgw/internal/versioncheck"
 )
 
 // newVersionChecker builds the update checker from configuration. The install

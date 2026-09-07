@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // migratePreScopeTable rebuilds a rate_limits table created before rule scopes

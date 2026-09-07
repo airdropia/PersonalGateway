@@ -7,9 +7,9 @@ import (
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/enterpilot/gomodel/internal/storage/mongotest"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx/sqlxtest"
+	"github.com/airdropia/pgw/internal/storage/mongotest"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlx/sqlxtest"
 )
 
 // runStoreSuite exercises behaviour every Store implementation owes its

@@ -9,9 +9,9 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/mcpgateway"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/mcpgateway"
 )
 
 // MCPServerAdmin is the narrow surface of *mcpgateway.Service the admin API

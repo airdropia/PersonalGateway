@@ -1,7 +1,7 @@
 package modeldata
 
 import (
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // ModelInfoAccessor provides the minimal interface needed by Enrich to access

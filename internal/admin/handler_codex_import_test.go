@@ -17,8 +17,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/codeximport"
-	"github.com/enterpilot/gomodel/internal/providers"
+	"github.com/airdropia/pgw/internal/codeximport"
+	"github.com/airdropia/pgw/internal/providers"
 )
 
 // fakeCodexCredsService is the test stub for ProviderCredentialsAdmin. It

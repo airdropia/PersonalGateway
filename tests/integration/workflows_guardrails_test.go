@@ -14,12 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	"github.com/enterpilot/gomodel/internal/authkeys"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/guardrails"
-	"github.com/enterpilot/gomodel/internal/workflows"
-	"github.com/enterpilot/gomodel/tests/integration/dbassert"
+	"github.com/airdropia/pgw/internal/auditlog"
+	"github.com/airdropia/pgw/internal/authkeys"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/guardrails"
+	"github.com/airdropia/pgw/internal/workflows"
+	"github.com/airdropia/pgw/tests/integration/dbassert"
 )
 
 func TestManagedAuthKeyWorkflow_AuditAndUsageValidity_PostgreSQL(t *testing.T) {

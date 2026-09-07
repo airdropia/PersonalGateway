@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // mockModelLookup implements core.ModelLookup for fast, isolated Router testing.

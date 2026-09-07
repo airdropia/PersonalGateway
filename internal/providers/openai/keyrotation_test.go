@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/providers"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/providers"
 )
 
 // recordAuthServer serves /models and records the Authorization header of every

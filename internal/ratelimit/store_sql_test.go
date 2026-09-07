@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx/sqlxtest"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlx/sqlxtest"
 )
 
 func runSQLStoreTest(t *testing.T, body func(t *testing.T, store *SQLStore)) {

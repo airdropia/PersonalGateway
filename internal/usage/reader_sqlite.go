@@ -1,7 +1,7 @@
 package usage
 
 import (
-	"github.com/enterpilot/gomodel/internal/storage/sqlutil"
+	"github.com/airdropia/pgw/internal/storage/sqlutil"
 
 	"context"
 	"database/sql"

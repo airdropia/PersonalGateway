@@ -12,10 +12,10 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	"github.com/enterpilot/gomodel/internal/budget"
-	"github.com/enterpilot/gomodel/internal/mcpgateway"
-	"github.com/enterpilot/gomodel/internal/ratelimit"
+	"github.com/airdropia/pgw/internal/auditlog"
+	"github.com/airdropia/pgw/internal/budget"
+	"github.com/airdropia/pgw/internal/mcpgateway"
+	"github.com/airdropia/pgw/internal/ratelimit"
 )
 
 func TestMCPAuditLabel(t *testing.T) {

@@ -3,7 +3,7 @@ package modeldata
 import (
 	"regexp"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // terminalReleaseDateSuffixPatterns are intentionally broad because provider

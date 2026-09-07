@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/cache/modelcache"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/modeldata"
+	"github.com/airdropia/pgw/internal/cache/modelcache"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/modeldata"
 )
 
 // LoadFromCache loads the model list from the cache backend.

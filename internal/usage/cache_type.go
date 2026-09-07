@@ -3,7 +3,7 @@ package usage
 import (
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 const (

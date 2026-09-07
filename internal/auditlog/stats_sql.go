@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlutil"
+	"github.com/airdropia/pgw/internal/storage/sqlutil"
 )
 
 // GetRequestStats returns time-bucketed status-class counts and per-provider

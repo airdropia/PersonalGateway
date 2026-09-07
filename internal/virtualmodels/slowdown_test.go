@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func TestResolveSlowdown(t *testing.T) {

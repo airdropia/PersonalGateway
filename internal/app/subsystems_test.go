@@ -7,9 +7,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/ext"
-	"github.com/enterpilot/gomodel/internal/providers"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/ext"
+	"github.com/airdropia/pgw/internal/providers"
 )
 
 type lifecycleRuntimeSetting struct{}

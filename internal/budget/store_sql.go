@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlutil"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlutil"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 const (

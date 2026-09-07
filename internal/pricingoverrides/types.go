@@ -3,7 +3,7 @@ package pricingoverrides
 import (
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/modelselectors"
+	"github.com/airdropia/pgw/internal/modelselectors"
 )
 
 const CurrencyUSD = "USD"

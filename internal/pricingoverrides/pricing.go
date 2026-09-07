@@ -1,7 +1,7 @@
 package pricingoverrides
 
 import (
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func clonePricing(p Pricing) Pricing {

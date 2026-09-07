@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // ErrNotFound indicates a requested file mapping was not found.

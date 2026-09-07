@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"sync/atomic"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // Keyring holds the API keys configured for a single provider instance and

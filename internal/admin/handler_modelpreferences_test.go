@@ -12,7 +12,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/modelpreferences"
+	"github.com/airdropia/pgw/internal/modelpreferences"
 )
 
 // mpFakeStore is the in-memory Store backing modelpreferences.Service during

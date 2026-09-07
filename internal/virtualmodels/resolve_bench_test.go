@@ -7,8 +7,8 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // benchService builds a service over the balancing catalog with one redirect

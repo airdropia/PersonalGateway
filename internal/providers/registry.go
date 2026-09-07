@@ -12,10 +12,10 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/cache/modelcache"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/modeldata"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/cache/modelcache"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/modeldata"
 )
 
 // ModelInfo holds information about a model and its provider

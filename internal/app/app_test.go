@@ -15,15 +15,15 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/ext"
-	"github.com/enterpilot/gomodel/internal/admin"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/guardrails"
-	"github.com/enterpilot/gomodel/internal/live"
-	"github.com/enterpilot/gomodel/internal/llmclient"
-	"github.com/enterpilot/gomodel/internal/providers"
-	"github.com/enterpilot/gomodel/internal/server"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/ext"
+	"github.com/airdropia/pgw/internal/admin"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/guardrails"
+	"github.com/airdropia/pgw/internal/live"
+	"github.com/airdropia/pgw/internal/llmclient"
+	"github.com/airdropia/pgw/internal/providers"
+	"github.com/airdropia/pgw/internal/server"
 )
 
 type routeObservationSelector struct {

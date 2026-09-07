@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // RateLimitsConfig holds request, token, and concurrency limits scoped to

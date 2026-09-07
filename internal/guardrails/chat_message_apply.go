@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // chatToMessages extracts the normalized message list from a ChatRequest.

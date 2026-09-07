@@ -8,7 +8,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func normalizeConversationItems(items []json.RawMessage) ([]json.RawMessage, *core.GatewayError) {

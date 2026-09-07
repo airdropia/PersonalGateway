@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite"
 
-	"github.com/enterpilot/gomodel/internal/admin"
-	"github.com/enterpilot/gomodel/internal/admin/dashboard"
-	"github.com/enterpilot/gomodel/internal/mcpgateway"
-	"github.com/enterpilot/gomodel/internal/providers"
-	"github.com/enterpilot/gomodel/internal/server"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/admin"
+	"github.com/airdropia/pgw/internal/admin/dashboard"
+	"github.com/airdropia/pgw/internal/mcpgateway"
+	"github.com/airdropia/pgw/internal/providers"
+	"github.com/airdropia/pgw/internal/server"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 type e2eServerOptions struct {

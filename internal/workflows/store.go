@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/enterpilot/gomodel/internal/validation"
+	"github.com/airdropia/pgw/internal/validation"
 )
 
 // ErrNotFound indicates a requested workflow version was not found.

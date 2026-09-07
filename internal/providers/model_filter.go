@@ -5,8 +5,8 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // modelFilter is the resolved form of config.ModelFilter, evaluated against one

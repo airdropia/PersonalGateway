@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/enterpilot/gomodel/ext"
-	"github.com/enterpilot/gomodel/internal/storage"
+	"github.com/airdropia/pgw/ext"
+	"github.com/airdropia/pgw/internal/storage"
 )
 
 type testSetting struct {

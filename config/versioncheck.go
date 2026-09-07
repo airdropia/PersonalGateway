@@ -1,6 +1,6 @@
 package config
 
-import "github.com/enterpilot/gomodel/internal/versioncheck"
+import "github.com/airdropia/pgw/internal/versioncheck"
 
 // VersionCheckConfig controls the daily update check against the GoModel
 // release manifest.

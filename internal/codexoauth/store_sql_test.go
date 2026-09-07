@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx/sqlxtest"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlx/sqlxtest"
 )
 
 // runSQLStoreTest is the SQL-dialect test helper that mirrors the

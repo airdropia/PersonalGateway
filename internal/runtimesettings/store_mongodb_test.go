@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/storage/mongotest"
+	"github.com/airdropia/pgw/internal/storage/mongotest"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 

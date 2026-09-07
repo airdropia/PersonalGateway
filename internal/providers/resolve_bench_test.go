@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // buildBenchRegistry creates a registry holding exactly totalModels models,

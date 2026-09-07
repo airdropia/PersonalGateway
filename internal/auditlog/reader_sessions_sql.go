@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlutil"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlutil"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // auditThreadKey groups entries into threads: the session id when present,

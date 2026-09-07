@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/enterpilot/gomodel/internal/platformdir"
+	"github.com/airdropia/pgw/internal/platformdir"
 )
 
 // Type constants for storage backends

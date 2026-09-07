@@ -13,8 +13,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/virtualmodels"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/virtualmodels"
 )
 
 // These tests lock in that virtual-model (alias) resolution reaches the realtime

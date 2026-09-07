@@ -1,5 +1,5 @@
 package zai
 
-import "github.com/enterpilot/gomodel/internal/providers"
+import "github.com/airdropia/pgw/internal/providers"
 
 var passthroughSemanticEnricher = providers.NewOpenAICompatibleSemanticEnricher("zai")

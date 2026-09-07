@@ -11,8 +11,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/ratelimit"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/ratelimit"
 )
 
 // staticRuleStore serves a fixed rule set so tests can build a real

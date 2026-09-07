@@ -6,7 +6,7 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 const defaultCleanupLogMessage = "failed to delete rewritten batch input file"

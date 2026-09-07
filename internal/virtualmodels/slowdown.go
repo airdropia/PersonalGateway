@@ -3,7 +3,7 @@ package virtualmodels
 import (
 	"context"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // ResolveSlowdown returns the request-scoped extra-time factor for a resolved

@@ -3,7 +3,7 @@ package modeldata
 import (
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // mockAccessor implements ModelInfoAccessor for testing.

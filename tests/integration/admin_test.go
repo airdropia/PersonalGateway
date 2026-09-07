@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/enterpilot/gomodel/internal/providers"
-	"github.com/enterpilot/gomodel/internal/usage"
-	"github.com/enterpilot/gomodel/tests/integration/dbassert"
+	"github.com/airdropia/pgw/internal/providers"
+	"github.com/airdropia/pgw/internal/usage"
+	"github.com/airdropia/pgw/tests/integration/dbassert"
 )
 
 func TestAdminUsageSummary_PostgreSQL(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/responsestore"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/responsestore"
 )
 
 func TestResponsesUtilityRoutesRejectNullBody(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func TestCaptureInternalJSONExchange_PreservesHeadersWithoutBodies(t *testing.T) {

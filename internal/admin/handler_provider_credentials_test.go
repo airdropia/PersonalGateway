@@ -12,7 +12,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/providers"
+	"github.com/airdropia/pgw/internal/providers"
 )
 
 // providerCredentialsAdminFake is an in-memory ProviderCredentialsAdmin for

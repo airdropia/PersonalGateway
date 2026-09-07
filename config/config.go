@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-	"github.com/enterpilot/gomodel/internal/storage"
+	"github.com/airdropia/pgw/internal/storage"
 )
 
 // personalDefaultConfigYAML is the personal-edition profile used as the

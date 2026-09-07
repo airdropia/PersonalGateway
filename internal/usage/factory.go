@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/storage"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/storage"
 )
 
 // Result holds the initialized usage logger and its dependencies.

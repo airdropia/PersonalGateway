@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/ext"
+	"github.com/airdropia/pgw/ext"
 )
 
 func TestAuthenticationEventRecorderWritesDurableAuditEntry(t *testing.T) {

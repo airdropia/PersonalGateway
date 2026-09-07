@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/filestore"
-	"github.com/enterpilot/gomodel/internal/gateway"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/filestore"
+	"github.com/airdropia/pgw/internal/gateway"
 )
 
 type batchInputFileProviderResolver struct {

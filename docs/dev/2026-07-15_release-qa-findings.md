@@ -125,7 +125,7 @@ fall back to the raw header the way `recordToolCall` already does.
   `last_error_model`; the ≥3-errors-AND-≥50%-rate flag gate verified (4
   errors over 41 requests correctly leaves the provider Healthy);
   `status_reason` present on every provider.
-- #522: binary builds and runs as `github.com/enterpilot/gomodel`.
+- #522: binary builds and runs as `github.com/airdropia/pgw`.
 
 ## Notes / minor
 

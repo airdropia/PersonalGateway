@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // mockRoutableProvider is a test double for core.RoutableProvider.

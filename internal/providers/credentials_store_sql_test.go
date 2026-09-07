@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx/sqlxtest"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlx/sqlxtest"
 )
 
 func runSQLCredentialStoreTest(t *testing.T, body func(t *testing.T, store *SQLCredentialStore)) {

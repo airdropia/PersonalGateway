@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/storage"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/storage"
 )
 
 func newSQLiteStorage(t *testing.T) storage.SQLiteStorage {

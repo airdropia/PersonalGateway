@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // ModelList represents the top-level structure of models.json.

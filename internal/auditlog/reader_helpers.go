@@ -1,7 +1,7 @@
 package auditlog
 
 import (
-	"github.com/enterpilot/gomodel/internal/storage/sqlutil"
+	"github.com/airdropia/pgw/internal/storage/sqlutil"
 )
 
 // clampLimitOffset applies the audit log reader pagination policy:

@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/enterpilot/gomodel/ext"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/modelselectors"
+	"github.com/airdropia/pgw/ext"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/modelselectors"
 )
 
 // Service is the single native engine over the virtual_models store. It serves

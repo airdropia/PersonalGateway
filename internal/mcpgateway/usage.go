@@ -1,7 +1,7 @@
 package mcpgateway
 
 import (
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 
 	"encoding/json"
 	"strings"
@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 // recordToolCall emits one usage entry per tools/call so MCP traffic shows up

@@ -6,8 +6,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/modelselectors"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/modelselectors"
 )
 
 // Service keeps preferences cached in memory and resolves scoped visibility.

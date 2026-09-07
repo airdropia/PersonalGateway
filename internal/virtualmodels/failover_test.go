@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // failoverChain resolves source like the request path does and returns the

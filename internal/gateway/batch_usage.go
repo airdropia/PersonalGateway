@@ -12,9 +12,9 @@ import (
 
 	"github.com/google/uuid"
 
-	batchstore "github.com/enterpilot/gomodel/internal/batch"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/usage"
+	batchstore "github.com/airdropia/pgw/internal/batch"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 // LogBatchUsageFromBatchResults writes per-item usage from batch results once.

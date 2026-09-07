@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func workflowSlowdown(workflow *core.Workflow) float64 {

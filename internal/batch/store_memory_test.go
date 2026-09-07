@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func TestMemoryStoreLifecycle(t *testing.T) {

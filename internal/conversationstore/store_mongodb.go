@@ -15,8 +15,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/storage"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/storage"
 )
 
 // mongoConversationDocument stores the snapshot JSON and one JSON string per

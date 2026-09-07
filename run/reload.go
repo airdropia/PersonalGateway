@@ -15,7 +15,7 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/enterpilot/gomodel/config"
+	"github.com/airdropia/pgw/config"
 )
 
 // reloadSignal asks a running gateway to re-read its configuration, the same

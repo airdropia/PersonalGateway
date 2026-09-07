@@ -10,9 +10,9 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/authkeys"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/validation"
+	"github.com/airdropia/pgw/internal/authkeys"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/validation"
 )
 
 type createAuthKeyRequest struct {

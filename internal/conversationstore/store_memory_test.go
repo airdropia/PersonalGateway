@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func storedConversation(id string, storedAt time.Time) *StoredConversation {

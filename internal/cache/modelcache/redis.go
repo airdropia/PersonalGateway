@@ -8,7 +8,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/enterpilot/gomodel/internal/cache"
+	"github.com/airdropia/pgw/internal/cache"
 )
 
 const (

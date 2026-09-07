@@ -3,7 +3,7 @@ package openrouter
 import (
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func TestPassthroughSemanticEnricherUsesOpenRouterType(t *testing.T) {

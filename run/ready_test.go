@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/enterpilot/gomodel/config"
+	"github.com/airdropia/pgw/config"
 )
 
 func TestReadyProbeURL(t *testing.T) {

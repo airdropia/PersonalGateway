@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/enterpilot/gomodel/internal/storage/mongotest"
+	"github.com/airdropia/pgw/internal/storage/mongotest"
 )
 
 func TestIsMongoTransactionCapabilityError(t *testing.T) {

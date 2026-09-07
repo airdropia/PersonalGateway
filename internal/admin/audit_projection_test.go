@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/auditlog"
+	"github.com/airdropia/pgw/internal/auditlog"
 )
 
 // fullAuditEntry builds an entry carrying every heavy payload the list

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func TestErrorFromGateway(t *testing.T) {

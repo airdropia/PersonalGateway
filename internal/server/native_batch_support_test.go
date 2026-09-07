@@ -3,10 +3,10 @@ package server
 import (
 	"testing"
 
-	batchstore "github.com/enterpilot/gomodel/internal/batch"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/gateway"
-	"github.com/enterpilot/gomodel/internal/usage"
+	batchstore "github.com/airdropia/pgw/internal/batch"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/gateway"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 func TestHandlerLogBatchUsageFromBatchResultsUsesStoredUserPath(t *testing.T) {

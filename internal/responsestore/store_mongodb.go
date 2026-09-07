@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/enterpilot/gomodel/internal/storage"
+	"github.com/airdropia/pgw/internal/storage"
 )
 
 type mongoResponseDocument struct {

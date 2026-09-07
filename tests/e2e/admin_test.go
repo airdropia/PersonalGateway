@@ -16,9 +16,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/enterpilot/gomodel/internal/admin"
-	"github.com/enterpilot/gomodel/internal/providers"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/admin"
+	"github.com/airdropia/pgw/internal/providers"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 type e2ePricingRecalculator struct {

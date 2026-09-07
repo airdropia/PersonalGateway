@@ -4,7 +4,7 @@ package vllm
 import (
 	"github.com/goccy/go-json"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // adaptChatRequest renames the legacy reasoning_content field to reasoning on

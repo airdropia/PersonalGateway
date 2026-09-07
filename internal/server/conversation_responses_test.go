@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/conversationstore"
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/conversationstore"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 type appendFailingConversationStore struct {

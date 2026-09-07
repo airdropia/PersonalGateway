@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/modeldata"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/modeldata"
 )
 
 // Initialize fetches models from all registered providers and populates the registry.

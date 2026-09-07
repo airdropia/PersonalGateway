@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/auditlog"
-	"github.com/enterpilot/gomodel/internal/server"
-	"github.com/enterpilot/gomodel/internal/session"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/auditlog"
+	"github.com/airdropia/pgw/internal/server"
+	"github.com/airdropia/pgw/internal/session"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 // ablation isolates the per-subsystem cost of the default-on middleware stack.

@@ -7,8 +7,8 @@ import (
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/enterpilot/gomodel/internal/storage"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // Result holds the initialized response store.

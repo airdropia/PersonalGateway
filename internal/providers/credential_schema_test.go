@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // schemaTestFactory registers one provider type per DiscoveryConfig under test.

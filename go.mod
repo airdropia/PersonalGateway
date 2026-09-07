@@ -1,4 +1,4 @@
-module github.com/enterpilot/gomodel
+module github.com/airdropia/pgw
 
 go 1.27.0
 

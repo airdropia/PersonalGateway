@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/platformdir"
+	"github.com/airdropia/pgw/internal/platformdir"
 )
 
 // The pid file follows the database instead of scattering GoModel's state

@@ -8,7 +8,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 type serviceSnapshot struct {

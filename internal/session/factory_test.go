@@ -3,7 +3,7 @@ package session
 import (
 	"testing"
 
-	"github.com/enterpilot/gomodel/config"
+	"github.com/airdropia/pgw/config"
 )
 
 func TestNewDetectorFromConfigDisabled(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/enterpilot/gomodel/config"
+	"github.com/airdropia/pgw/config"
 )
 
 // memStore is a minimal in-memory Store for service tests.

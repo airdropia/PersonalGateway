@@ -10,8 +10,8 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlutil"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlutil"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // SQLStore stores immutable workflow versions in a SQL database.

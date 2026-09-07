@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/enterpilot/gomodel/ext"
-	"github.com/enterpilot/gomodel/internal/storage"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/ext"
+	"github.com/airdropia/pgw/internal/storage"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 

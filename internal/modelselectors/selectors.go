@@ -5,7 +5,7 @@ package modelselectors
 import (
 	"strings"
 
-	"github.com/enterpilot/gomodel/internal/validation"
+	"github.com/airdropia/pgw/internal/validation"
 )
 
 // Catalog is the minimal configured-provider surface needed for selector validation.

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func createConversation(t *testing.T, srv *Server, body string) core.Conversation {

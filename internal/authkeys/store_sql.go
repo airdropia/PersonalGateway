@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlutil"
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlutil"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // SQLStore stores auth keys in a SQL database.

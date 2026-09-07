@@ -3,7 +3,7 @@ package virtualmodels
 import (
 	"log/slog"
 
-	"github.com/enterpilot/gomodel/ext"
+	"github.com/airdropia/pgw/ext"
 )
 
 // adaptiveTarget delegates the choice among the viable pool to the installed

@@ -14,9 +14,9 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/enterpilot/gomodel/internal/providers"
-	openai_provider "github.com/enterpilot/gomodel/internal/providers/openai"
-	"github.com/enterpilot/gomodel/internal/server"
+	"github.com/airdropia/pgw/internal/providers"
+	openai_provider "github.com/airdropia/pgw/internal/providers/openai"
+	"github.com/airdropia/pgw/internal/server"
 )
 
 const (

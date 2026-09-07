@@ -10,9 +10,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/enterpilot/gomodel/ext"
-	"github.com/enterpilot/gomodel/internal/server"
-	"github.com/enterpilot/gomodel/internal/session"
+	"github.com/airdropia/pgw/ext"
+	"github.com/airdropia/pgw/internal/server"
+	"github.com/airdropia/pgw/internal/session"
 )
 
 // recordingRewriter captures the ext.Input the stack hands to a request

@@ -1,6 +1,6 @@
 package guardrails
 
-import "github.com/enterpilot/gomodel/internal/core"
+import "github.com/airdropia/pgw/internal/core"
 
 // cloneToolCalls deep-copies tool calls so guardrail rewrites never mutate the
 // caller's original message slice.

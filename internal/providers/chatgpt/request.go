@@ -1,7 +1,7 @@
 package chatgpt
 
 import (
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // upstreamRequest is the request body the ChatGPT Codex backend accepts.

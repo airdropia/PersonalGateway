@@ -10,7 +10,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/enterpilot/gomodel/config"
+	"github.com/airdropia/pgw/config"
 )
 
 // ServerStatus describes the runtime connection state of one upstream server.

@@ -4,8 +4,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/providers"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/providers"
 )
 
 // TestDefaultProviderFactoryCredentialForms pins the credential form the

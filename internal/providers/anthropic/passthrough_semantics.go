@@ -1,6 +1,6 @@
 package anthropic
 
-import "github.com/enterpilot/gomodel/internal/providers"
+import "github.com/airdropia/pgw/internal/providers"
 
 var passthroughSemanticEnricher = providers.NewSemanticEnricher("anthropic", map[string]providers.PassthroughEndpointSemantics{
 	"/messages":         {Operation: "anthropic.messages", GenAIOperation: "chat", AuditPath: "/v1/messages"},

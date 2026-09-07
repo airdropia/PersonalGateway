@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/enterpilot/gomodel/config"
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/config"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 // ProviderConfig holds the fully resolved provider configuration after merging

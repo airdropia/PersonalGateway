@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/enterpilot/gomodel/ext"
+	"github.com/airdropia/pgw/ext"
 )
 
 // scriptedSelector answers Select with a fixed qualified model (or declines)

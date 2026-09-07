@@ -5,9 +5,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/streaming"
-	"github.com/enterpilot/gomodel/internal/usage"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/streaming"
+	"github.com/airdropia/pgw/internal/usage"
 )
 
 // RouteGate reports whether a provider/model route currently has rate-limit

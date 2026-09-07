@@ -3,7 +3,7 @@ package cohere
 import (
 	"testing"
 
-	"github.com/enterpilot/gomodel/internal/core"
+	"github.com/airdropia/pgw/internal/core"
 )
 
 func TestPassthroughSemanticEnricherRecognizesCohereV2Inference(t *testing.T) {

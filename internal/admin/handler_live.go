@@ -11,8 +11,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/internal/core"
-	"github.com/enterpilot/gomodel/internal/live"
+	"github.com/airdropia/pgw/internal/core"
+	"github.com/airdropia/pgw/internal/live"
 )
 
 // LiveLogs handles GET /admin/live/logs.

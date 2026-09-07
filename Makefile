@@ -17,9 +17,9 @@ GOLANGCI_LINT_VERSION := 2.13.1
 GOLANGCI_LINT ?= $(shell go env GOPATH)/bin/golangci-lint
 
 # Linker flags to inject version info
-LDFLAGS := -X "github.com/enterpilot/gomodel/internal/version.Version=$(VERSION)" \
-           -X "github.com/enterpilot/gomodel/internal/version.Commit=$(COMMIT)" \
-           -X "github.com/enterpilot/gomodel/internal/version.Date=$(DATE)"
+LDFLAGS := -X "github.com/airdropia/pgw/internal/version.Version=$(VERSION)" \
+           -X "github.com/airdropia/pgw/internal/version.Commit=$(COMMIT)" \
+           -X "github.com/airdropia/pgw/internal/version.Date=$(DATE)"
 
 install-tools:
 	@installed_version="$$($(GOLANGCI_LINT) version 2>/dev/null || true)"; \

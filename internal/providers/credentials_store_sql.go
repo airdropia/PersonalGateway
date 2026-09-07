@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/enterpilot/gomodel/internal/storage/sqlx"
+	"github.com/airdropia/pgw/internal/storage/sqlx"
 )
 
 // SQLCredentialStore stores admin-managed provider credentials in a SQL

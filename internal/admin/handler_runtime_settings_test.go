@@ -13,9 +13,9 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/enterpilot/gomodel/ext"
-	"github.com/enterpilot/gomodel/internal/runtimesettings"
-	"github.com/enterpilot/gomodel/internal/storage"
+	"github.com/airdropia/pgw/ext"
+	"github.com/airdropia/pgw/internal/runtimesettings"
+	"github.com/airdropia/pgw/internal/storage"
 )
 
 type adminTestRuntimeSetting struct {
