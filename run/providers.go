@@ -2,40 +2,19 @@ package run
 
 import (
 	"github.com/airdropia/pgw/config"
-	"github.com/airdropia/pgw/internal/observability"
+	"github.com/airdropia/pgw/internal/provider"
 	"github.com/airdropia/pgw/internal/providers"
-	"github.com/airdropia/pgw/internal/providers/anthropic"
-	"github.com/airdropia/pgw/internal/providers/azure"
-	"github.com/airdropia/pgw/internal/providers/bedrock"
-	"github.com/airdropia/pgw/internal/providers/chatgpt"
-	"github.com/airdropia/pgw/internal/providers/gemini"
-	"github.com/airdropia/pgw/internal/providers/groq"
-	"github.com/airdropia/pgw/internal/providers/openai"
-	"github.com/airdropia/pgw/internal/providers/opencodego"
-	"github.com/airdropia/pgw/internal/providers/xai"
 )
 
-// defaultProviderFactory builds the provider factory with the providers the
-// personal edition keeps (plan §8, Stage 5 doc). Stage 9 drops the
-// enterprise-only providers from the binary. The unkept providers remain
-// in the source tree for upstream sync, but are no longer linked: Go's
-// linker garbage-collects the unreferenced package code.
-func defaultProviderFactory(cfg *config.Config) *providers.ProviderFactory {
+// defaultProviderFactory builds the provider factory with the single
+// generic OpenAI-compatible adapter (plan §6). There are no
+// provider-specific packages; every configured upstream is one instance
+// of the same adapter, identified by a user-chosen display_name. The
+// vendor packages that upstream GoModel shipped are deleted from the
+// link path in Stage 1; the factory can therefore never accidentally
+// re-register them.
+func defaultProviderFactory(_ *config.Config) *providers.ProviderFactory {
 	factory := providers.NewProviderFactory()
-
-	if cfg.Metrics.Enabled {
-		factory.SetHooks(observability.NewPrometheusHooks())
-	}
-
-	factory.Add(openai.Registration)
-	factory.Add(chatgpt.Registration)
-	factory.Add(anthropic.Registration)
-	factory.Add(gemini.Registration)
-	factory.Add(groq.Registration)
-	factory.Add(xai.Registration)
-	factory.Add(opencodego.Registration)
-	factory.Add(azure.Registration)
-	factory.Add(bedrock.Registration)
-
+	factory.Add(provider.Registration)
 	return factory
 }
