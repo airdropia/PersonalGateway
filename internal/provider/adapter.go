@@ -57,8 +57,14 @@ type Adapter struct {
 // New constructs an Adapter from a factory-resolved ProviderConfig.
 // It does not perform any I/O at construction time; ListModels, Chat
 // completion, etc. open HTTP on demand.
+// defaultBaseURL is the fallback used when the operator does not supply
+// a base_url. It is kept local to New (rather than read back from the
+// Registration var) to avoid a Go package-initialization cycle between
+// the Registration literal and the constructor.
+const defaultBaseURL = "https://api.openai.com/v1"
+
 func New(cfg providers.ProviderConfig, opts providers.ProviderOptions) core.Provider {
-	baseURL := providers.ResolveBaseURL(cfg.BaseURL, Registration.Discovery.DefaultBaseURL)
+	baseURL := providers.ResolveBaseURL(cfg.BaseURL, defaultBaseURL)
 	// Ensure the base URL ends in /v1 so the path-joined endpoints below
 	// hit the OpenAI-compatible surface even if the operator gave a bare
 	// host. Trailing slashes are stripped first to keep the join clean.
@@ -293,7 +299,7 @@ func (a *Adapter) applyAuth(req *http.Request) {
 	if a.keys == nil || a.keys.Len() == 0 {
 		return
 	}
-	req.Header.Set("Authorization", "Bearer "+a.keys.Current())
+	req.Header.Set("Authorization", "Bearer "+a.keys.Primary())
 }
 
 // joinURL appends path to baseURL, ensuring exactly one slash between
