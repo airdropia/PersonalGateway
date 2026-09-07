@@ -14,7 +14,6 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"github.com/airdropia/pgw/internal/auditlog"
-	"github.com/airdropia/pgw/internal/codexoauth"
 	"github.com/airdropia/pgw/internal/authkeys"
 	"github.com/airdropia/pgw/internal/budget"
 	"github.com/airdropia/pgw/internal/core"
@@ -51,7 +50,6 @@ type Handler struct {
 	guardrails          guardrails.Catalog
 	guardrailDefs       *guardrails.Service
 	modelPreferences    *modelpreferences.Service
-	codexOAuth          CodexOAuthAdmin
 	liveBroker          *live.Broker
 	runtimeConfig       DashboardConfigResponse
 	runtimeRefresher    RuntimeRefresher
@@ -326,25 +324,6 @@ func WithModelPreferences(service *modelpreferences.Service) Option {
 	return func(h *Handler) {
 		h.modelPreferences = service
 	}
-}
-
-// WithCodexOAuth enables the Codex OAuth administration endpoints.
-func WithCodexOAuth(service CodexOAuthAdmin) Option {
-	return func(h *Handler) {
-		h.codexOAuth = service
-	}
-}
-
-// CodexOAuthAdmin is the narrow surface the admin endpoint needs from
-// the codexoauth package. Defined here so handler tests can stub the
-// service with a lightweight fake without depending on the production
-// implementation.
-type CodexOAuthAdmin interface {
-	StartLogin(ctx context.Context, providerName string) (*codexoauth.PendingFlow, error)
-	CompleteLogin(ctx context.Context, providerName, callbackURL string) (*codexoauth.Connection, error)
-	Connection(ctx context.Context, providerName string) (*codexoauth.Connection, error)
-	RefreshIfNeeded(ctx context.Context, providerName string) (string, error)
-	Forget(ctx context.Context, providerName string) error
 }
 
 // WithLiveBroker enables realtime dashboard log previews.

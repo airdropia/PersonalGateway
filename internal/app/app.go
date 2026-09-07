@@ -26,7 +26,6 @@ import (
 	"github.com/airdropia/pgw/internal/batch"
 	"github.com/airdropia/pgw/internal/budget"
 	"github.com/airdropia/pgw/internal/conversationstore"
-	"github.com/airdropia/pgw/internal/codexoauth"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/guardrails"
 	"github.com/airdropia/pgw/internal/filestore"
@@ -73,8 +72,6 @@ type App struct {
 	authKeys            *authkeys.Result
 	guardrails          *guardrails.Result
 	modelPreferences    *modelpreferences.Result
-	codexOAuth          *codexoauth.Result
-
 	workflows           *workflows.Result
 	live                *live.Broker
 	server              *server.Server
@@ -549,12 +546,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	}
 	app.modelPreferences = modelPreferencesResult
 	app.register(subsystemModelPreferences, ownedByShutdown, app.modelPreferences.Close)
-	codexOAuthResult, codexOAuthErr := codexoauth.New(ctx, sharedStorage)
-	if codexOAuthErr != nil {
-		return fail("failed to initialize codex oauth", codexOAuthErr)
-	}
-	app.codexOAuth = codexOAuthResult
-	app.register(subsystemCodexOAuth, ownedByShutdown, app.codexOAuth.Close)
 
 	var virtualModelsResult *virtualmodels.Result
 	virtualModelsResult, err = virtualmodels.New(ctx, appCfg, sharedStorage, providerResult.Registry, declaredProviders)
@@ -823,8 +814,7 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 			providerResult.ConfiguredProviders,
 			authKeyResult.Service,
 			vm,
-		app.modelPreferences.Service,
-		app.codexOAuth.Service,
+			app.modelPreferences.Service,
 			app.pricingOverrides.Service,
 			workflowResult.Service,
 			app.guardrails.Service,
@@ -1261,7 +1251,6 @@ func initAdmin(
 	authKeyService *authkeys.Service,
 	virtualModelService *virtualmodels.Service,
 	modelPreferencesService *modelpreferences.Service,
-	codexOAuthService *codexoauth.Service,
 	pricingOverrideService *pricingoverrides.Service,
 	workflowService *workflows.Service,
 	guardrailService *guardrails.Service,
@@ -1325,7 +1314,6 @@ func initAdmin(
 		admin.WithAuthKeys(authKeyService),
 		admin.WithVirtualModels(virtualModelService),
 		admin.WithModelPreferences(modelPreferencesService),
-		admin.WithCodexOAuth(codexOAuthService),
 		admin.WithPricingOverrides(pricingOverrideService),
 		admin.WithWorkflows(workflowService),
 		admin.WithGuardrailService(guardrailService),
