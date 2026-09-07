@@ -964,6 +964,17 @@ optional; later stages depend on earlier ones.
     `internal/providers/*.go`.
 1.6 Delete `internal/anthropicapi/`.
 
+    Implementation note (recorded after dependency analysis): openai is the
+    shared base of 22 other vendor packages, so it cannot be deleted on its
+    own without breaking them, and the only non-vendor consumers of the
+    vendor set are the contract/perf replay suites (plan §4.3 deletes
+    those). Stages 1.3+1.4 therefore land as one atomic cut: delete the
+    whole vendor set plus the vendor-only contract/perf tests in a single
+    commit, keeping the build green. `internal/providers/health/` is kept:
+    the admin Providers page (plan §5.1) reads its Tracker snapshots and it
+    imports nothing vendor-specific. `tests/contract/` keeps a placeholder
+    doc.go; the new §14.2 contract suite repopulates it in Stage 14.
+
 ### Stage 2 — Cut Codex subsystems (2 commits)
 
 2.1 Delete `internal/codeximport/` and `internal/admin/handler_codex_import.go`.
