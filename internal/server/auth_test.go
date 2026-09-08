@@ -206,7 +206,7 @@ func TestAuthMiddlewareWithRequestAuthenticatorEnrichesRequest(t *testing.T) {
 		Method:          " OIDC ",
 	}}
 	handler := RequestSnapshotCapture()(AuthMiddlewareWithRequestAuthenticators(
-		"", nil, []ext.RequestAuthenticator{requestAuth}, nil,
+		"", []ext.RequestAuthenticator{requestAuth}, nil,
 	)(func(c *echo.Context) error {
 		assert.Equal(t, "/users/person@example.com", core.UserPathFromContext(c.Request().Context()))
 		assert.Equal(t, []string{"sso"}, core.RequestLabelsFromContext(c.Request().Context()))
@@ -287,7 +287,7 @@ func TestAuthMiddlewareWithRequestAuthenticatorsFailurePaths(t *testing.T) {
 			if tt.adminGate {
 				next = AdminAccessMiddleware()(next)
 			}
-			handler := AuthMiddlewareWithRequestAuthenticators("", nil, authenticators, nil)(next)
+			handler := AuthMiddlewareWithRequestAuthenticators("", authenticators, nil)(next)
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodGet, "/admin/auth-keys", nil)
@@ -324,7 +324,7 @@ func TestAuthMiddlewareWithOnlyNilRequestAuthenticatorsStaysDisabled(t *testing.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := AuthMiddlewareWithRequestAuthenticators("", nil, tt.auths, nil)(func(c *echo.Context) error {
+			handler := AuthMiddlewareWithRequestAuthenticators("", tt.auths, nil)(func(c *echo.Context) error {
 				return c.NoContent(http.StatusNoContent)
 			})
 			e := echo.New()
@@ -340,7 +340,7 @@ func TestAuthMiddlewareExplicitBearerPrecedesRequestAuthenticator(t *testing.T) 
 		PrincipalID: "oidc:principal-1", UserPath: "/users/sso", DashboardAccess: true,
 	}}
 	handler := AuthMiddlewareWithRequestAuthenticators(
-		"master", nil, []ext.RequestAuthenticator{requestAuth}, nil,
+		"master", []ext.RequestAuthenticator{requestAuth}, nil,
 	)(func(c *echo.Context) error {
 		assert.Empty(t, core.UserPathFromContext(c.Request().Context()))
 		_, inherited := ext.AuthenticationFromContext(c.Request().Context())

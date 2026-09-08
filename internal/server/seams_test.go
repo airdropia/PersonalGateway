@@ -2,7 +2,7 @@ package server
 
 // Test-only convenience wrappers over the production constructors and
 // middleware. Production wires the fuller variants directly
-// (newHandlerWithAuthorizer at http.go, AuthMiddlewareWithAuthenticator,
+// (newHandlerWithAuthorizer at http.go, AuthMiddlewareWithRequestAuthenticators,
 // WorkflowResolutionWithResolverAndPolicy); tests use these to avoid
 // repeating nil arguments.
 
