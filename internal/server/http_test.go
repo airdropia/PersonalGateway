@@ -568,59 +568,6 @@ func TestServerWithMasterKeyAndMetrics(t *testing.T) {
 	})
 }
 
-func TestServer_ManagedAuthKeyUserPathOverridesHeaderBeforeWorkflowResolution(t *testing.T) {
-	mock := &mockProvider{
-		supportedModels: []string{"gpt-5-mini"},
-		providerTypes:   map[string]string{"gpt-5-mini": "openai"},
-		response: &core.ChatResponse{
-			ID:       "chatcmpl-test",
-			Object:   "chat.completion",
-			Model:    "gpt-5-mini",
-			Provider: "openai",
-			Choices: []core.Choice{
-				{
-					Index:        0,
-					FinishReason: "stop",
-					Message: core.ResponseMessage{
-						Role:    "assistant",
-						Content: "ok",
-					},
-				},
-			},
-		},
-	}
-
-	var capturedSelector core.WorkflowSelector
-	srv := New(mock, &Config{
-		Authenticator: mockAuthenticator{
-			enabled:   true,
-			tokenToID: map[string]string{"managed-token": "key-123"},
-			tokenPath: map[string]string{"managed-token": "/team/from-key"},
-		},
-		WorkflowPolicyResolver: requestWorkflowPolicyResolverFunc(func(selector core.WorkflowSelector) (*core.ResolvedWorkflowPolicy, error) {
-			capturedSelector = selector
-			return nil, nil
-		}),
-	})
-
-	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{"model":"gpt-5-mini","messages":[{"role":"user","content":"hi"}]}`))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer managed-token")
-	req.Header.Set(core.UserPathHeader, "/team/from-header")
-	rec := httptest.NewRecorder()
-
-	srv.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", rec.Code)
-	}
-	if capturedSelector.UserPath != "/team/from-key" {
-		t.Fatalf("selector.UserPath = %q, want /team/from-key", capturedSelector.UserPath)
-	}
-}
-
-func newDashboardHandler(t *testing.T) *dashboard.Handler {
-	t.Helper()
 	h, err := dashboard.NewWithBasePath("/")
 	if err != nil {
 		t.Fatalf("failed to create dashboard handler: %v", err)
@@ -860,64 +807,25 @@ func TestAdminAPI_RequiresAuth(t *testing.T) {
 	}
 }
 
-func TestAdminAPI_SkipsAuthWithoutMasterKey(t *testing.T) {
+func TestAdminPricingRecalculationSkipsAuthWithoutMasterKey(t *testing.T) {
 	mock := &mockProvider{}
-	adminHandler := admin.NewHandler(nil, nil)
+	recalculator := &pricingRecalculatorStub{}
+	adminHandler := admin.NewHandler(nil, providers.NewModelRegistry(), admin.WithUsagePricingRecalculator(recalculator))
 	srv := New(mock, &Config{
-		Authenticator:         mockAuthenticator{enabled: true, tokenToID: map[string]string{"managed-token": "key-123"}},
 		AdminEndpointsEnabled: true,
 		AdminHandler:          adminHandler,
 	})
 
-	adminReq := httptest.NewRequest(http.MethodGet, "/admin/models", nil)
-	adminRec := httptest.NewRecorder()
-	srv.ServeHTTP(adminRec, adminReq)
+	req := httptest.NewRequest(http.MethodPost, "/admin/usage/recalculate-pricing", strings.NewReader(`{"confirmation":"recalculate"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
 
-	if adminRec.Code != http.StatusOK {
-		t.Fatalf("expected admin API 200 without auth when master key is unset, got %d body=%s", adminRec.Code, adminRec.Body.String())
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected pricing recalculation 200 without auth when master key is unset, got %d body=%s", rec.Code, rec.Body.String())
 	}
-
-	modelReq := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
-	modelRec := httptest.NewRecorder()
-	srv.ServeHTTP(modelRec, modelReq)
-
-	if modelRec.Code != http.StatusUnauthorized {
-		t.Fatalf("expected model API 401 without auth when managed keys are enabled, got %d body=%s", modelRec.Code, modelRec.Body.String())
-	}
-}
-
-func TestAdminPricingRecalculationSkipsAuthWithoutMasterKey(t *testing.T) {
-	tests := []struct {
-		name          string
-		authenticator BearerTokenAuthenticator
-	}{
-		{name: "no auth configured"},
-		{name: "managed keys enabled", authenticator: mockAuthenticator{enabled: true, tokenToID: map[string]string{"managed-token": "key-123"}}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock := &mockProvider{}
-			recalculator := &pricingRecalculatorStub{}
-			adminHandler := admin.NewHandler(nil, providers.NewModelRegistry(), admin.WithUsagePricingRecalculator(recalculator))
-			srv := New(mock, &Config{
-				Authenticator:         tt.authenticator,
-				AdminEndpointsEnabled: true,
-				AdminHandler:          adminHandler,
-			})
-
-			req := httptest.NewRequest(http.MethodPost, "/admin/usage/recalculate-pricing", strings.NewReader(`{"confirmation":"recalculate"}`))
-			req.Header.Set("Content-Type", "application/json")
-			rec := httptest.NewRecorder()
-			srv.ServeHTTP(rec, req)
-
-			if rec.Code != http.StatusOK {
-				t.Fatalf("expected pricing recalculation 200 without auth when master key is unset, got %d body=%s", rec.Code, rec.Body.String())
-			}
-			if recalculator.calls != 1 {
-				t.Fatalf("recalculator calls = %d, want 1", recalculator.calls)
-			}
-		})
+	if recalculator.calls != 1 {
+		t.Fatalf("recalculator calls = %d, want 1", recalculator.calls)
 	}
 }
 

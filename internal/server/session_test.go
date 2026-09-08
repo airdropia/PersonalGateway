@@ -189,55 +189,6 @@ func TestSessionCaptureAllowsParentWhenAuthenticationIsDisabled(t *testing.T) {
 	}
 }
 
-func TestSessionCaptureUsesLiveAuthenticationDecision(t *testing.T) {
-	detector := session.NewDetector(session.BuiltinRules(), true)
-	lookup := &sessionParentLookup{entry: &auditlog.InteractionParent{
-		SessionID: "parent-session", UserPath: "/",
-	}}
-	authenticator := &mockAuthenticator{
-		tokenToID: map[string]string{"managed": "key-1"},
-	}
-	provider := &mockProvider{
-		supportedModels: []string{"gpt-4o"},
-		providerTypes:   map[string]string{"gpt-4o": "openai"},
-		response: &core.ChatResponse{
-			ID: "chatcmpl-test", Object: "chat.completion", Model: "gpt-4o",
-			Choices: []core.Choice{{Message: core.ResponseMessage{Role: "assistant", Content: "ok"}}},
-		},
-	}
-	srv := New(provider, &Config{
-		Authenticator:   authenticator,
-		SessionDetector: detector,
-		AuditReader:     lookup,
-	})
-	send := func(token string) {
-		req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions",
-			strings.NewReader(`{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}`))
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set(interactionParentHeader, "parent-log")
-		req.Header.Set("X-Session-Id", "detected-session")
-		if token != "" {
-			req.Header.Set("Authorization", "Bearer "+token)
-		}
-		rec := httptest.NewRecorder()
-		srv.ServeHTTP(rec, req)
-		if rec.Code != http.StatusOK {
-			t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
-		}
-	}
-
-	send("")
-	if lookup.calls != 1 {
-		t.Fatalf("no-auth parent lookups = %d, want 1", lookup.calls)
-	}
-
-	authenticator.enabled = true
-	send("managed")
-	if lookup.calls != 1 {
-		t.Fatalf("non-dashboard managed key performed a parent lookup; calls = %d", lookup.calls)
-	}
-}
-
 func TestSessionCaptureRejectsUntrustedOrCrossPathParent(t *testing.T) {
 	detector := session.NewDetector(session.BuiltinRules(), true)
 	for _, tc := range []struct {

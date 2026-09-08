@@ -8,7 +8,6 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/airdropia/pgw/internal/authkeys"
 	"github.com/airdropia/pgw/internal/budget"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/guardrails"
@@ -59,7 +58,6 @@ func validationWriter(isValidation func(error) bool) func(error) error {
 
 var (
 	workflowWriteError  = validationWriter(workflows.IsValidationError)
-	authKeyWriteError   = validationWriter(authkeys.IsValidationError)
 	guardrailWriteError = validationWriter(guardrails.IsValidationError)
 )
 

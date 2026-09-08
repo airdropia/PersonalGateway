@@ -14,7 +14,6 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"github.com/airdropia/pgw/internal/auditlog"
-	"github.com/airdropia/pgw/internal/authkeys"
 	"github.com/airdropia/pgw/internal/budget"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/guardrails"
@@ -36,7 +35,6 @@ type Handler struct {
 	auditReader         auditlog.Reader
 	registry            *providers.ModelRegistry
 	pricingResolver     usage.PricingResolver
-	authKeys            *authkeys.Service
 	virtualModels       *virtualmodels.Service
 	mcpServers          MCPServerAdmin
 	pricingOverrides    *pricingoverrides.Service
@@ -255,13 +253,6 @@ func WithMCPServers(service MCPServerAdmin) Option {
 func WithProviderCredentials(service ProviderCredentialsAdmin) Option {
 	return func(h *Handler) {
 		h.providerCredentials = service
-	}
-}
-
-// WithAuthKeys enables managed auth key administration endpoints.
-func WithAuthKeys(service *authkeys.Service) Option {
-	return func(h *Handler) {
-		h.authKeys = service
 	}
 }
 

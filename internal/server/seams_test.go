@@ -46,9 +46,9 @@ func newHandler(
 	)
 }
 
-// AuthMiddleware validates the master key without a managed-key authenticator.
+// AuthMiddleware validates the master key.
 func AuthMiddleware(masterKey string, skipPaths []string) echo.MiddlewareFunc {
-	return AuthMiddlewareWithAuthenticator(masterKey, nil, skipPaths)
+	return AuthMiddlewareWithRequestAuthenticators(masterKey, nil, skipPaths)
 }
 
 // WorkflowResolution resolves request-scoped workflows without an explicit

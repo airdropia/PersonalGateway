@@ -59,7 +59,6 @@ const (
 	subsystemPricingOverrides    = "model pricing overrides"
 	subsystemGuardrails          = "guardrails"
 	subsystemWorkflows           = "workflows"
-	subsystemAuthKeys            = "auth keys"
 	subsystemMCPGateway          = "mcp gateway"
 	subsystemResponseCache       = "response cache"
 )
@@ -112,7 +111,6 @@ func (a *App) shutdownOrder() []registeredSubsystem {
 	{name: subsystemWorkflows, close: closerOf(a.workflows)},
 	{name: subsystemPricingOverrides, close: closerOf(a.pricingOverrides)},
 	{name: subsystemGuardrails, close: closerOf(a.guardrails)},
-	{name: subsystemAuthKeys, close: closerOf(a.authKeys)},
 	{name: subsystemFileStore, close: closerOf(a.fileStore)},
 	// The remaining stores flush buffered work into storage, so they must
 		{name: subsystemBatch, close: closerOf(a.batch)},

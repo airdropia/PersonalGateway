@@ -87,7 +87,7 @@ func newModelPreferencesServiceForTest(t *testing.T, providers []string) *modelp
 }
 
 // jsonRequest builds a request with a JSON body and the matching Content-Type
-// header, following the existing convention used by handler_authkeys_test.go.
+// header.
 func jsonRequest(t *testing.T, method, path, body string) *http.Request {
 	t.Helper()
 	req := httptest.NewRequest(method, path, bytes.NewBufferString(body))

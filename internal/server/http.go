@@ -66,7 +66,6 @@ const (
 type Config struct {
 	BasePath                        string                                 // URL path prefix where the app is mounted (default: /)
 	MasterKey                       string                                 // Optional: Master key for authentication
-	Authenticator                   BearerTokenAuthenticator               // Optional: managed API key authenticator
 	MetricsEnabled                  bool                                   // Whether to expose Prometheus metrics endpoint
 	MetricsEndpoint                 string                                 // HTTP path for metrics endpoint (default: /metrics)
 	BodySizeLimit                   string                                 // Max request body size (e.g., "10M", "1024K")
@@ -354,9 +353,9 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 
 	// Authentication (skips public paths)
 	// Register by authenticator presence; its Enabled state can change at runtime.
-	authMiddlewareRegistered := cfg != nil && (cfg.MasterKey != "" || cfg.Authenticator != nil || hasRequestAuthenticators(cfg.RequestAuthenticators))
+	authMiddlewareRegistered := cfg != nil && (cfg.MasterKey != "" || hasRequestAuthenticators(cfg.RequestAuthenticators))
 	if authMiddlewareRegistered {
-		e.Use(AuthMiddlewareWithRequestAuthenticators(cfg.MasterKey, cfg.Authenticator, cfg.RequestAuthenticators, authSkipPaths, userPathHeaderName))
+		e.Use(AuthMiddlewareWithRequestAuthenticators(cfg.MasterKey, cfg.RequestAuthenticators, authSkipPaths, userPathHeaderName))
 	}
 
 	// Session identification runs after auth so session ids are scoped by the

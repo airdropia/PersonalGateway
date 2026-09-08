@@ -22,7 +22,6 @@ import (
 	"github.com/airdropia/pgw/internal/admin"
 	"github.com/airdropia/pgw/internal/admin/dashboard"
 	"github.com/airdropia/pgw/internal/auditlog"
-	"github.com/airdropia/pgw/internal/authkeys"
 	"github.com/airdropia/pgw/internal/batch"
 	"github.com/airdropia/pgw/internal/budget"
 	"github.com/airdropia/pgw/internal/conversationstore"
@@ -66,7 +65,6 @@ type App struct {
 	mcpGateway          *mcpgateway.Result
 	providerCredentials *providers.CredentialsResult
 	pricingOverrides    *pricingoverrides.Result
-	authKeys            *authkeys.Result
 	guardrails          *guardrails.Result
 	modelPreferences    *modelpreferences.Result
 	workflows           *workflows.Result
@@ -619,14 +617,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	}
 	app.workflows = workflowResult
 
-	var authKeyResult *authkeys.Result
-	authKeyResult, err = authkeys.New(ctx, sharedStorage)
-	if err != nil {
-		return fail("failed to initialize auth keys", err)
-	}
-	app.authKeys = authKeyResult
-	app.register(subsystemAuthKeys, ownedByShutdown, app.authKeys.Close)
-
 	// Log configuration status after auth has been initialized so the startup
 	// message reflects both bootstrap and managed auth modes.
 	app.logStartupInfo()
@@ -703,7 +693,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	serverCfg := &server.Config{
 		BasePath:                        appCfg.Server.BasePath,
 		MasterKey:                       appCfg.Server.MasterKey,
-		Authenticator:                   authKeyResult.Service,
 		MetricsEnabled:                  appCfg.Metrics.Enabled,
 		MetricsEndpoint:                 appCfg.Metrics.Endpoint,
 		BodySizeLimit:                   appCfg.Server.BodySizeLimit,
@@ -776,7 +765,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 			sharedStorage,
 			providerResult.Registry,
 			providerResult.ConfiguredProviders,
-			authKeyResult.Service,
 			vm,
 			app.modelPreferences.Service,
 			app.pricingOverrides.Service,
@@ -1055,18 +1043,11 @@ func (a *App) logStartupInfo() {
 	cfg := a.config
 
 	// Security warnings
-	managedKeysConfigured := a.authKeys != nil && a.authKeys.Service != nil && a.authKeys.Service.Enabled()
 	switch {
-	case a.extensionAuth && cfg.Server.MasterKey != "" && managedKeysConfigured:
-		slog.Info("authentication enabled", "mode", "master_key+managed_keys+extension")
-	case a.extensionAuth && (cfg.Server.MasterKey != "" || managedKeysConfigured):
-		slog.Info("authentication enabled", "mode", "extension+bearer")
+	case a.extensionAuth && cfg.Server.MasterKey != "":
+		slog.Info("authentication enabled", "mode", "master_key+extension")
 	case a.extensionAuth:
 		slog.Info("authentication enabled", "mode", "extension")
-	case cfg.Server.MasterKey != "" && managedKeysConfigured:
-		slog.Info("authentication enabled", "mode", "master_key+managed_keys", "managed_key_total", a.authKeys.Service.Total(), "managed_key_active", a.authKeys.Service.ActiveCount())
-	case managedKeysConfigured:
-		slog.Info("authentication enabled", "mode", "managed_keys", "managed_key_total", a.authKeys.Service.Total(), "managed_key_active", a.authKeys.Service.ActiveCount())
 	case cfg.Server.MasterKey == "":
 		slog.Warn("SECURITY WARNING: GOMODEL_MASTER_KEY not set - server running in UNSAFE MODE",
 			"security_risk", "unauthenticated access allowed",
@@ -1180,7 +1161,6 @@ func initAdmin(
 	auditStorage storage.Storage,
 	registry *providers.ModelRegistry,
 	configuredProviders []providers.SanitizedProviderConfig,
-	authKeyService *authkeys.Service,
 	virtualModelService *virtualmodels.Service,
 	modelPreferencesService *modelpreferences.Service,
 	pricingOverrideService *pricingoverrides.Service,
@@ -1241,7 +1221,6 @@ func initAdmin(
 		admin.WithUsagePricingRecalculator(pricingRecalculator),
 		admin.WithPricingResolver(pricingOverrideService),
 		admin.WithAuditReader(auditReader),
-		admin.WithAuthKeys(authKeyService),
 		admin.WithVirtualModels(virtualModelService),
 		admin.WithModelPreferences(modelPreferencesService),
 		admin.WithPricingOverrides(pricingOverrideService),

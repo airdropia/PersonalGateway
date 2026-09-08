@@ -12,35 +12,22 @@ import (
 
 	"github.com/airdropia/pgw/ext"
 	"github.com/airdropia/pgw/internal/auditlog"
-	"github.com/airdropia/pgw/internal/authkeys"
 	"github.com/airdropia/pgw/internal/core"
 )
 
-// BearerTokenAuthenticator authenticates managed bearer tokens and returns
-// their internal auth key metadata on success.
-type BearerTokenAuthenticator interface {
-	Enabled() bool
-	Authenticate(ctx context.Context, token string) (authkeys.AuthenticationResult, error)
-}
-
-// AuthMiddlewareWithAuthenticator creates an Echo middleware that validates
-// the legacy master key and, when configured, managed auth keys from the auth
-// key service. If no auth mechanism is configured, no authentication is
-// required. skipPaths is a list of paths that should bypass authentication.
-func AuthMiddlewareWithAuthenticator(masterKey string, authenticator BearerTokenAuthenticator, skipPaths []string, userPathHeader ...string) echo.MiddlewareFunc {
-	return AuthMiddlewareWithRequestAuthenticators(masterKey, authenticator, nil, skipPaths, userPathHeader...)
-}
-
-// AuthMiddlewareWithRequestAuthenticators additionally accepts extension
+// AuthMiddlewareWithRequestAuthenticators creates an Echo middleware that
+// validates the master key and, when configured, extension request
 // authenticators such as OIDC sessions. Explicit bearer credentials always
-// take precedence over ambient request credentials such as cookies.
-func AuthMiddlewareWithRequestAuthenticators(masterKey string, authenticator BearerTokenAuthenticator, requestAuthenticators []ext.RequestAuthenticator, skipPaths []string, userPathHeader ...string) echo.MiddlewareFunc {
+// take precedence over ambient request credentials such as cookies. If no
+// auth mechanism is configured, no authentication is required. skipPaths is
+// a list of paths that should bypass authentication.
+func AuthMiddlewareWithRequestAuthenticators(masterKey string, requestAuthenticators []ext.RequestAuthenticator, skipPaths []string, userPathHeader ...string) echo.MiddlewareFunc {
 	userPathHeaderName := configuredUserPathHeaderName(userPathHeader...)
 	hasRequestAuthenticator := hasRequestAuthenticators(requestAuthenticators)
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
 			// If no auth mechanism is configured, allow all requests.
-			if masterKey == "" && (authenticator == nil || !authenticator.Enabled()) && !hasRequestAuthenticator {
+			if masterKey == "" && !hasRequestAuthenticator {
 				auditlog.EnrichEntryWithAuthMethod(c, auditlog.AuthMethodNoKey)
 				setInteractionContinuationAllowed(c, true)
 				return next(c)
@@ -84,22 +71,7 @@ func AuthMiddlewareWithRequestAuthenticators(masterKey string, authenticator Bea
 					return next(c)
 				}
 
-				if authenticator != nil && authenticator.Enabled() {
-					auditlog.EnrichEntryWithAuthMethod(c, auditlog.AuthMethodAPIKey)
-					authResult, err := authenticator.Authenticate(c.Request().Context(), token)
-					if err == nil {
-						applyAuthKeyResult(c, authResult, userPathHeaderName)
-						return next(c)
-					}
-
-					authErr := authenticationErrorWithAudit(c, authFailureMessage(err), "authentication failed")
-					return writeGatewayError(c, authErr)
-				}
-				message := "invalid credentials"
-				if masterKey != "" && (authenticator == nil || !authenticator.Enabled()) {
-					message = "invalid master key"
-				}
-				return writeGatewayError(c, authenticationError(c, message))
+				return writeGatewayError(c, authenticationError(c, "invalid master key"))
 			}
 
 			for _, requestAuthenticator := range requestAuthenticators {
@@ -265,31 +237,6 @@ func interactionContinuationAllowed(ctx context.Context) bool {
 	return allowed
 }
 
-// applyAuthKeyResult enriches the request context and audit entry with the
-// authenticated managed key's identity, labels, and bound user path.
-func applyAuthKeyResult(c *echo.Context, authResult authkeys.AuthenticationResult, userPathHeaderName string) {
-	ctx := core.WithAuthKeyID(c.Request().Context(), authResult.ID)
-	ctx = context.WithValue(ctx, managedDashboardAccessKey{}, authResult.DashboardAccess)
-	ctx = context.WithValue(ctx, interactionContinuationAllowedKey{}, authResult.DashboardAccess)
-	if len(authResult.Labels) > 0 {
-		// Key labels join any labels the tagging middleware already
-		// extracted from request headers; duplicates collapse.
-		ctx = core.WithRequestLabels(ctx, core.MergeLabels(core.RequestLabelsFromContext(ctx), authResult.Labels))
-	}
-	if userPath := strings.TrimSpace(authResult.UserPath); userPath != "" {
-		ctx = core.WithEffectiveUserPath(ctx, userPath)
-		ctx = core.WithUserPathHeaderName(ctx, userPathHeaderName)
-		if snapshot := core.GetRequestSnapshot(ctx); snapshot != nil {
-			ctx = core.WithRequestSnapshot(ctx, snapshot.WithUserPathHeader(userPath, userPathHeaderName))
-		}
-		c.Request().Header.Set(userPathHeaderName, userPath)
-		auditlog.EnrichEntryWithUserPath(c, userPath)
-	}
-	c.SetRequest(c.Request().WithContext(ctx))
-	setAuthenticationUserHeader(c, strings.TrimSpace(authResult.UserPath))
-	auditlog.EnrichEntryWithAuthKeyID(c, authResult.ID)
-}
-
 func setAuthenticationUserHeader(c *echo.Context, userPath string) {
 	if c == nil {
 		return
@@ -297,26 +244,7 @@ func setAuthenticationUserHeader(c *echo.Context, userPath string) {
 	c.Response().Header().Set(ext.AuthenticationUserHeader, strings.TrimSpace(userPath))
 }
 
-func authFailureMessage(err error) string {
-	if err == nil {
-		return "invalid API key"
-	}
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return "authentication unavailable"
-	}
-	message := strings.TrimSpace(err.Error())
-	if message == "" {
-		return "invalid API key"
-	}
-	return message
-}
-
 func authenticationError(c *echo.Context, message string) *core.GatewayError {
 	auditlog.EnrichEntryWithError(c, string(core.ErrorTypeAuthentication), message)
 	return core.NewAuthenticationError("", message)
-}
-
-func authenticationErrorWithAudit(c *echo.Context, auditMessage, responseMessage string) *core.GatewayError {
-	auditlog.EnrichEntryWithError(c, string(core.ErrorTypeAuthentication), auditMessage)
-	return core.NewAuthenticationError("", responseMessage)
 }

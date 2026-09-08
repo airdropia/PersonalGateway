@@ -15,117 +15,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/airdropia/pgw/internal/auditlog"
-	"github.com/airdropia/pgw/internal/authkeys"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/guardrails"
 	"github.com/airdropia/pgw/internal/workflows"
 	"github.com/airdropia/pgw/tests/integration/dbassert"
 )
 
-func TestManagedAuthKeyWorkflow_AuditAndUsageValidity_PostgreSQL(t *testing.T) {
-	fixture := SetupTestServer(t, TestServerConfig{
-		DBType:                "postgresql",
-		AuditLogEnabled:       true,
-		UsageEnabled:          true,
-		LogBodies:             true,
-		LogHeaders:            true,
-		AdminEndpointsEnabled: true,
-		OnlyModelInteractions: false,
-		MasterKey:             "integration-master-key",
-	})
-	defer fixture.Shutdown(t)
-
-	issuedKey := createManagedAuthKey(t, fixture.ServerURL, "integration-master-key", map[string]any{
-		"name":        "managed-workflow-key",
-		"description": "integration managed auth key",
-		"user_path":   "/team/integration/workflows",
-	})
-
-	workflow := createWorkflow(t, fixture.ServerURL, "integration-master-key", map[string]any{
-		"scope_provider_name": "test",
-		"scope_model":         "gpt-4",
-		"scope_user_path":     issuedKey.UserPath,
-		"name":                "managed-auth-workflow",
-		"description":         "disable cache for managed auth key path",
-		"workflow_payload": workflows.Payload{
-			SchemaVersion: 1,
-			Features: workflows.FeatureFlags{
-				Cache:      false,
-				Audit:      true,
-				Usage:      true,
-				Guardrails: false,
-				Failover:   new(false),
-			},
-			Guardrails: []workflows.GuardrailStep{},
-		},
-	})
-	require.Equal(t, "test", workflow.Scope.Provider)
-	require.Equal(t, "gpt-4", workflow.Scope.Model)
-	require.Equal(t, issuedKey.UserPath, workflow.Scope.UserPath)
-
-	requestID := uuid.NewString()
-	req := newChatRequest("gpt-4", "Hello from managed workflow")
-	req.Provider = "test"
-
-	resp := sendChatRequestWithHeaders(t, fixture.ServerURL, req, map[string]string{
-		"Authorization": "Bearer " + issuedKey.Value,
-		"X-Request-ID":  requestID,
-	})
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-	closeBody(resp)
-
-	fixture.FlushAndClose(t)
-
-	auditEntries := dbassert.QueryAuditLogsByRequestID(t, fixture.PgPool, requestID)
-	require.Len(t, auditEntries, 1, "expected one audit log entry")
-	auditEntry := auditEntries[0]
-
-	dbassert.AssertAuditLogFieldCompleteness(t, auditEntry)
-	dbassert.AssertAuditLogMatches(t, dbassert.ExpectedAuditLog{
-		Provider:   "test",
-		StatusCode: http.StatusOK,
-		Method:     http.MethodPost,
-		Path:       "/v1/chat/completions",
-		RequestID:  requestID,
-	}, auditEntry)
-	dbassert.AssertAuditLogDurationPositive(t, auditEntry)
-	dbassert.AssertNoErrorType(t, auditEntry)
-	dbassert.AssertAuditLogHasData(t, auditEntry)
-	dbassert.AssertAuditLogHasBody(t, auditEntry, true, true)
-	dbassert.AssertAuditLogHasHeaders(t, auditEntry, true, true)
-
-	assert.True(t, strings.HasSuffix(auditEntry.Model, "gpt-4"), "expected requested model to end with gpt-4, got %q", auditEntry.Model)
-	assert.Equal(t, workflow.ID, auditEntry.WorkflowVersionID)
-	assert.Equal(t, issuedKey.ID, auditEntry.AuthKeyID)
-	assert.Equal(t, auditlog.AuthMethodAPIKey, auditEntry.AuthMethod)
-	assert.Equal(t, issuedKey.UserPath, auditEntry.UserPath)
-	assert.Empty(t, auditEntry.CacheType)
-
-	require.NotNil(t, auditEntry.Data)
-	require.NotNil(t, auditEntry.Data.WorkflowFeatures)
-	assert.False(t, auditEntry.Data.WorkflowFeatures.Cache)
-	assert.True(t, auditEntry.Data.WorkflowFeatures.Audit)
-	assert.True(t, auditEntry.Data.WorkflowFeatures.Usage)
-	assert.False(t, auditEntry.Data.WorkflowFeatures.Guardrails)
-	assert.False(t, auditEntry.Data.WorkflowFeatures.Failover)
-
-	usageEntries := dbassert.QueryUsageByRequestID(t, fixture.PgPool, requestID)
-	require.Len(t, usageEntries, 1, "expected one usage entry")
-	usageEntry := usageEntries[0]
-
-	dbassert.AssertUsageFieldCompleteness(t, usageEntry)
-	dbassert.AssertUsageMatches(t, dbassert.ExpectedUsage{
-		Provider:  "test",
-		Endpoint:  "/v1/chat/completions",
-		RequestID: requestID,
-	}, usageEntry)
-	dbassert.AssertUsageHasTokens(t, usageEntry)
-	dbassert.AssertUsageTokensConsistent(t, usageEntry)
-
-	assert.True(t, strings.HasSuffix(usageEntry.Model, "gpt-4"), "expected usage model to end with gpt-4, got %q", usageEntry.Model)
-	assert.Equal(t, issuedKey.UserPath, usageEntry.UserPath)
-	assert.Empty(t, usageEntry.CacheType)
-}
 
 func TestGuardrailWorkflow_RewritesUpstreamRequestAndPreservesAuditUsage_PostgreSQL(t *testing.T) {
 	fixture := SetupTestServer(t, TestServerConfig{
@@ -253,21 +148,6 @@ func TestGuardrailWorkflow_RewritesUpstreamRequestAndPreservesAuditUsage_Postgre
 	assert.True(t, strings.HasSuffix(usageEntry.Model, "gpt-4"), "expected usage model to end with gpt-4, got %q", usageEntry.Model)
 }
 
-func createManagedAuthKey(t *testing.T, serverURL, masterKey string, payload map[string]any) authkeys.IssuedKey {
-	t.Helper()
-
-	resp := adminJSONRequest(t, http.MethodPost, serverURL+"/admin/auth-keys", masterKey, payload)
-	defer closeBody(resp)
-	require.Equal(t, http.StatusCreated, resp.StatusCode)
-
-	var issued authkeys.IssuedKey
-	require.NoError(t, json.NewDecoder(resp.Body).Decode(&issued))
-	require.NotEmpty(t, issued.ID)
-	require.NotEmpty(t, issued.Value)
-	require.NotEmpty(t, issued.UserPath)
-
-	return issued
-}
 
 func createWorkflow(t *testing.T, serverURL, masterKey string, payload map[string]any) workflows.Version {
 	t.Helper()
