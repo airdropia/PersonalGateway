@@ -1,12 +1,9 @@
 package admin
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"strings"
-
-	"github.com/labstack/echo/v5"
 
 	"github.com/airdropia/pgw/internal/budget"
 	"github.com/airdropia/pgw/internal/core"
@@ -81,33 +78,6 @@ func pricingOverrideWriteError(err error) error {
 		return core.NewInvalidRequestError(err.Error(), err)
 	}
 	return core.NewProviderError("model_pricing_overrides", http.StatusBadGateway, err.Error(), err)
-}
-
-func deactivateByID(
-	c *echo.Context,
-	unavailableErr error,
-	idLabel string,
-	notFoundErr error,
-	notFoundMessage string,
-	deactivate func(context.Context, string) error,
-	writeError func(error) error,
-) error {
-	if unavailableErr != nil {
-		return handleError(c, unavailableErr)
-	}
-
-	id := strings.TrimSpace(c.Param("id"))
-	if id == "" {
-		return handleError(c, core.NewInvalidRequestError(idLabel+" id is required", nil))
-	}
-
-	if err := deactivate(c.Request().Context(), id); err != nil {
-		if errors.Is(err, notFoundErr) {
-			return handleError(c, core.NewNotFoundError(notFoundMessage+id))
-		}
-		return handleError(c, writeError(err))
-	}
-	return c.NoContent(http.StatusNoContent)
 }
 
 // modelPricingOverrideSelectorMaxLen caps decoded selectors to a sane size; provider
