@@ -568,6 +568,8 @@ func TestServerWithMasterKeyAndMetrics(t *testing.T) {
 	})
 }
 
+func newDashboardHandler(t *testing.T) *dashboard.Handler {
+	t.Helper()
 	h, err := dashboard.NewWithBasePath("/")
 	if err != nil {
 		t.Fatalf("failed to create dashboard handler: %v", err)

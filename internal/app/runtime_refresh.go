@@ -123,9 +123,6 @@ func (a *App) RefreshRuntime(ctx context.Context) (admin.RuntimeRefreshReport, e
 		return report, err
 	}
 
-	if err := a.runRefreshableServiceStep(&report, "auth_keys", a.authKeyService(), ctx); err != nil {
-		return report, err
-	}
 	if err := a.runRefreshableServiceStep(&report, "virtual_models", a.virtualModelsService(), ctx); err != nil {
 		return report, err
 	}
@@ -291,13 +288,6 @@ func (a *App) modelListURL() string {
 		return ""
 	}
 	return strings.TrimSpace(a.config.Cache.Model.ModelList.URL)
-}
-
-func (a *App) authKeyService() refreshableService {
-	if a == nil || a.authKeys == nil || a.authKeys.Service == nil {
-		return nil
-	}
-	return a.authKeys.Service
 }
 
 func (a *App) virtualModelsService() refreshableService {

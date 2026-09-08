@@ -396,7 +396,6 @@ func TestAuthMiddleware_InteractionContinuationAccess(t *testing.T) {
 	}
 }
 
-}
 func TestAuthMiddleware_SkipPaths(t *testing.T) {
 	t.Run("skips authentication for specified paths", func(t *testing.T) {
 		e := echo.New()
