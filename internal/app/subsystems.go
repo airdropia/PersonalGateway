@@ -32,10 +32,6 @@ type closerOwner int
 const (
 	// ownedByShutdown is released by the ordered list in shutdownOrder.
 	ownedByShutdown closerOwner = iota
-	// ownedByPrologue is released before the HTTP server drains, because it
-	// holds long-lived streams that would otherwise keep the drain open until
-	// its timeout.
-	ownedByPrologue
 	// ownedByServer is released by Server.Shutdown once no request is in
 	// flight, so in-flight work still reaches storage.
 	ownedByServer
