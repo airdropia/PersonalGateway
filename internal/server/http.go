@@ -548,7 +548,6 @@ func (s *Server) Shutdown(_ context.Context) error {
 			firstErr = err
 		}
 	}
-	s.handler.drainSnapshotWrites()
 	return firstErr
 }
 
