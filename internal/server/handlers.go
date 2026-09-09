@@ -11,14 +11,12 @@ import (
 	"github.com/airdropia/pgw/internal/anthropicapi"
 	"github.com/airdropia/pgw/internal/auditlog"
 	batchstore "github.com/airdropia/pgw/internal/batch"
-	"github.com/airdropia/pgw/internal/conversationstore"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/filestore"
 	"github.com/airdropia/pgw/internal/httpclient"
 	"github.com/airdropia/pgw/internal/mcpgateway"
 	"github.com/airdropia/pgw/internal/realtime"
 	"github.com/airdropia/pgw/internal/responsecache"
-	"github.com/airdropia/pgw/internal/responsestore"
 	"github.com/airdropia/pgw/internal/usage"
 )
 
@@ -42,10 +40,8 @@ type Handler struct {
 	pricingResolver                 usage.PricingResolver
 	batchStore                      batchstore.Store
 	fileStore                       filestore.Store
-	responseStore                   responsestore.Store
-	// storesMu guards responseStore, conversationStore, and translatedSvc wiring.
+	// storesMu guards translatedSvc wiring.
 	storesMu                     sync.RWMutex
-	conversationStore            conversationstore.Store
 	normalizePassthroughV1Prefix bool
 	enabledPassthroughProviders  map[string]struct{}
 	realtimeEnabled              bool
@@ -87,10 +83,6 @@ func newHandlerWithAuthorizer(
 		pricingResolver:          pricingResolver,
 		batchStore:               batchstore.NewMemoryStore(),
 		fileStore:                filestore.NewMemoryStore(),
-		// Fallback stores with default bounded retention (TTL plus entry and
-		// byte caps); app wiring replaces them with storage-backed stores.
-		responseStore:                responsestore.NewMemoryStore(),
-		conversationStore:            conversationstore.NewMemoryStore(),
 		normalizePassthroughV1Prefix: true,
 		enabledPassthroughProviders:  normalizeEnabledPassthroughProviders(defaultEnabledPassthroughProviders),
 		realtimeCalls:                realtime.NewCallRegistry(),
@@ -116,35 +108,6 @@ func (h *Handler) SetFileStore(store filestore.Store) {
 	h.fileStore = store
 }
 
-// SetResponseStore replaces the response snapshot store used by lifecycle endpoints.
-// nil is ignored to keep an always-available fallback memory store.
-func (h *Handler) SetResponseStore(store responsestore.Store) {
-	if store == nil {
-		return
-	}
-	h.storesMu.Lock()
-	defer h.storesMu.Unlock()
-	h.responseStore = store
-	if h.translatedSvc != nil {
-		h.translatedSvc.setResponseStore(store)
-	}
-}
-
-// SetConversationStore replaces the conversation store used by the
-// Conversations lifecycle endpoints and by /v1/responses conversation turns.
-// nil is ignored to keep an always-available fallback memory store.
-func (h *Handler) SetConversationStore(store conversationstore.Store) {
-	if store == nil {
-		return
-	}
-	h.storesMu.Lock()
-	defer h.storesMu.Unlock()
-	h.conversationStore = store
-	if h.translatedSvc != nil {
-		h.translatedSvc.setConversationStore(store)
-	}
-}
-
 func (h *Handler) translatedInference() *translatedInferenceService {
 	h.translatedSvcOnce.Do(func() {
 		s := &translatedInferenceService{
@@ -161,12 +124,9 @@ func (h *Handler) translatedInference() *translatedInferenceService {
 			pricingResolver:          h.pricingResolver,
 			responseCache:            h.responseCache,
 			guardrailsHash:           h.guardrailsHash,
-			responseStore:            h.currentResponseStore(),
 		}
 		s.initHandlers()
 		h.storesMu.Lock()
-		s.setResponseStore(h.responseStore)
-		s.setConversationStore(h.conversationStore)
 		h.translatedSvc = s
 		h.storesMu.Unlock()
 	})
@@ -232,37 +192,6 @@ func (h *Handler) images() *imageService {
 		svc.logImageOutputs = cfg.LogImageOutputs
 	}
 	return svc
-}
-
-func (h *Handler) nativeResponses() *nativeResponseService {
-	return &nativeResponseService{
-		provider:                 h.provider,
-		modelResolver:            h.modelResolver,
-		modelAuthorizer:          h.modelAuthorizer,
-		workflowPolicyResolver:   h.workflowPolicyResolver,
-		translatedRequestPatcher: h.translatedRequestPatcher,
-		responseStore:            h.currentResponseStore(),
-	}
-}
-
-func (h *Handler) conversations() *conversationService {
-	h.storesMu.RLock()
-	defer h.storesMu.RUnlock()
-	return &conversationService{conversationStore: h.conversationStore}
-}
-
-func (h *Handler) currentResponseStore() responsestore.Store {
-	h.storesMu.RLock()
-	defer h.storesMu.RUnlock()
-	return h.responseStore
-}
-
-// drainSnapshotWrites stops new background response snapshot writes and waits
-// for in-flight ones. Called during server shutdown before the response store
-// closes. It creates the (lazily initialized) inference service if needed so
-// the drain gate is set even when a request races shutdown into first use.
-func (h *Handler) drainSnapshotWrites() {
-	h.translatedInference().drainSnapshotWrites()
 }
 
 func (h *Handler) realtime() *realtimeService {
@@ -860,160 +789,6 @@ func (h *Handler) AudioTranslations(c *echo.Context) error {
 	return h.audio().CreateTranslation(c)
 }
 
-// Responses handles POST /v1/responses
-//
-// @Summary      Create a model response (Responses API)
-// @Tags         responses
-// @Accept       json
-// @Produce      json
-// @Produce      text/event-stream
-// @Security     BearerAuth
-// @Param        request  body      core.ResponsesRequest  true  "Responses API request"
-// @Success      200      {object}  core.ResponsesResponse  "JSON response or SSE stream when stream=true"
-// @Failure      400      {object}  core.OpenAIErrorEnvelope
-// @Failure      401      {object}  core.OpenAIErrorEnvelope
-// @Failure      429      {object}  core.OpenAIErrorEnvelope
-// @Failure      502      {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/responses [post]
-func (h *Handler) Responses(c *echo.Context) error {
-	return h.translatedInference().Responses(c)
-}
-
-// GetResponse handles GET /v1/responses/{id}.
-//
-// @Summary      Get a response
-// @Tags         responses
-// @Produce      json
-// @Security     BearerAuth
-// @Param        id        path      string  true   "Response ID"
-// @Param        provider  query     string  false  "Provider override for native lookups"
-// @Param        include   query     []string false "Fields to include in the response" collectionFormat(multi)
-// @Param        include[] query     []string false "Fields to include in the response" collectionFormat(multi)
-// @Param        include_obfuscation query bool false "Whether to include obfuscated response data"
-// @Param        starting_after query int false "Input item offset for providers that support it"
-// @Success      200       {object}  core.ResponsesResponse
-// @Failure      400       {object}  core.OpenAIErrorEnvelope
-// @Failure      401       {object}  core.OpenAIErrorEnvelope
-// @Failure      404       {object}  core.OpenAIErrorEnvelope
-// @Failure      501       {object}  core.OpenAIErrorEnvelope
-// @Failure      502       {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/responses/{id} [get]
-func (h *Handler) GetResponse(c *echo.Context) error {
-	return h.nativeResponses().GetResponse(c)
-}
-
-// ListResponseInputItems handles GET /v1/responses/{id}/input_items.
-//
-// @Summary      List response input items
-// @Tags         responses
-// @Produce      json
-// @Security     BearerAuth
-// @Param        id        path      string  true   "Response ID"
-// @Param        provider  query     string  false  "Provider override for native lookups"
-// @Param        after     query     string  false  "Pagination cursor"
-// @Param        include   query     []string false "Fields to include in listed input items" collectionFormat(multi)
-// @Param        include[] query     []string false "Fields to include in listed input items" collectionFormat(multi)
-// @Param        limit     query     int     false  "Maximum items to return (1-100, default 20)"
-// @Param        order     query     string  false  "Sort order: asc or desc"  Enums(asc, desc)
-// @Success      200       {object}  core.ResponseInputItemListResponse
-// @Failure      400       {object}  core.OpenAIErrorEnvelope
-// @Failure      401       {object}  core.OpenAIErrorEnvelope
-// @Failure      404       {object}  core.OpenAIErrorEnvelope
-// @Failure      501       {object}  core.OpenAIErrorEnvelope
-// @Failure      502       {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/responses/{id}/input_items [get]
-func (h *Handler) ListResponseInputItems(c *echo.Context) error {
-	return h.nativeResponses().ListResponseInputItems(c)
-}
-
-// CancelResponse handles POST /v1/responses/{id}/cancel.
-//
-// @Summary      Cancel a response
-// @Tags         responses
-// @Produce      json
-// @Security     BearerAuth
-// @Param        id        path      string  true   "Response ID"
-// @Param        provider  query     string  false  "Provider override for native cancellation"
-// @Success      200       {object}  core.ResponsesResponse
-// @Failure      400       {object}  core.OpenAIErrorEnvelope
-// @Failure      401       {object}  core.OpenAIErrorEnvelope
-// @Failure      404       {object}  core.OpenAIErrorEnvelope
-// @Failure      501       {object}  core.OpenAIErrorEnvelope
-// @Failure      502       {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/responses/{id}/cancel [post]
-func (h *Handler) CancelResponse(c *echo.Context) error {
-	return h.nativeResponses().CancelResponse(c)
-}
-
-// DeleteResponse handles DELETE /v1/responses/{id}.
-//
-// @Summary      Delete a response
-// @Tags         responses
-// @Produce      json
-// @Security     BearerAuth
-// @Param        id        path      string  true   "Response ID"
-// @Param        provider  query     string  false  "Provider override for native deletion"
-// @Success      200       {object}  core.ResponseDeleteResponse
-// @Failure      400       {object}  core.OpenAIErrorEnvelope
-// @Failure      401       {object}  core.OpenAIErrorEnvelope
-// @Failure      404       {object}  core.OpenAIErrorEnvelope
-// @Failure      501       {object}  core.OpenAIErrorEnvelope
-// @Failure      502       {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/responses/{id} [delete]
-func (h *Handler) DeleteResponse(c *echo.Context) error {
-	return h.nativeResponses().DeleteResponse(c)
-}
-
-// ResponseInputTokens handles POST /v1/responses/input_tokens.
-//
-// @Summary      Count response input tokens
-// @Tags         responses
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        request  body      core.ResponseInputTokensRequest  true  "Response input token request"
-// @Success      200      {object}  core.ResponseInputTokensResponse
-// @Failure      400      {object}  core.OpenAIErrorEnvelope
-// @Failure      401      {object}  core.OpenAIErrorEnvelope
-// @Failure      501      {object}  core.OpenAIErrorEnvelope
-// @Failure      502      {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/responses/input_tokens [post]
-func (h *Handler) ResponseInputTokens(c *echo.Context) error {
-	return h.nativeResponses().CountResponseInputTokens(c)
-}
-
-// CompactResponse handles POST /v1/responses/compact.
-//
-// @Summary      Compact response input
-// @Tags         responses
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        request  body      core.ResponseCompactRequest  true  "Response compact request"
-// @Success      200      {object}  core.ResponseCompactResponse
-// @Failure      400      {object}  core.OpenAIErrorEnvelope
-// @Failure      401      {object}  core.OpenAIErrorEnvelope
-// @Failure      501      {object}  core.OpenAIErrorEnvelope
-// @Failure      502      {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/responses/compact [post]
-func (h *Handler) CompactResponse(c *echo.Context) error {
-	return h.nativeResponses().CompactResponse(c)
-}
-
-// Embeddings handles POST /v1/embeddings
-//
-// @Summary      Create embeddings
-// @Tags         embeddings
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        request  body      core.EmbeddingRequest  true  "Embeddings request"
-// @Success      200      {object}  core.EmbeddingResponse
-// @Failure      400      {object}  core.OpenAIErrorEnvelope
-// @Failure      401      {object}  core.OpenAIErrorEnvelope
-// @Failure      429      {object}  core.OpenAIErrorEnvelope
-// @Failure      502      {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/embeddings [post]
 func (h *Handler) Embeddings(c *echo.Context) error {
 	return h.translatedInference().Embeddings(c)
 }

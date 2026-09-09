@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-// Helpers shared by feature store backends (responsestore, conversationstore,
+// Helpers shared by feature store backends (batch, files,
 // ...) that persist snapshots with unix-seconds retention columns, where an
 // expires_at of 0 means the row never expires.
 

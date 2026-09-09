@@ -22,12 +22,10 @@ import (
 	"github.com/airdropia/pgw/internal/admin/dashboard"
 	"github.com/airdropia/pgw/internal/auditlog"
 	batchstore "github.com/airdropia/pgw/internal/batch"
-	"github.com/airdropia/pgw/internal/conversationstore"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/filestore"
 	"github.com/airdropia/pgw/internal/mcpgateway"
 	"github.com/airdropia/pgw/internal/responsecache"
-	"github.com/airdropia/pgw/internal/responsestore"
 	"github.com/airdropia/pgw/internal/session"
 	"github.com/airdropia/pgw/internal/tagging"
 	"github.com/airdropia/pgw/internal/usage"
@@ -38,8 +36,6 @@ type Server struct {
 	echo                    *echo.Echo
 	handler                 *Handler
 	responseCacheMiddleware *responsecache.ResponseCacheMiddleware
-	responseStore           responsestore.Store
-	conversationStore       conversationstore.Store
 }
 
 const (
@@ -88,8 +84,6 @@ type Config struct {
 	PassthroughSemanticEnrichers    []core.PassthroughSemanticEnricher     // Optional: provider-owned passthrough semantic enrichers before workflow resolution
 	BatchStore                      batchstore.Store                       // Optional: Batch lifecycle persistence store
 	FileStore                       filestore.Store                        // Optional: File provider mapping persistence store
-	ResponseStore                   responsestore.Store                    // Optional: Responses lifecycle persistence store
-	ConversationStore               conversationstore.Store                // Optional: Conversations lifecycle persistence store
 	LogOnlyModelInteractions        bool                                   // Only log AI model endpoints (default: true)
 	DisablePassthroughRoutes        bool                                   // Disable /p/{provider}/{endpoint} route registration
 	RealtimeEnabled                 bool                                   // Enable the realtime websocket routes (/v1/realtime, /v1/realtime/translations) and passthrough upgrades
@@ -210,12 +204,6 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 	}
 	if cfg != nil && cfg.FileStore != nil {
 		handler.SetFileStore(cfg.FileStore)
-	}
-	if cfg != nil && cfg.ResponseStore != nil {
-		handler.SetResponseStore(cfg.ResponseStore)
-	}
-	if cfg != nil && cfg.ConversationStore != nil {
-		handler.SetConversationStore(cfg.ConversationStore)
 	}
 
 	// Build list of paths that skip authentication
@@ -423,21 +411,6 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 	e.POST("/v1/messages/batches/:id/cancel", handler.CancelMessagesBatch)
 	e.DELETE("/v1/messages/batches/:id", handler.DeleteMessagesBatch)
 	e.GET("/v1/messages/batches/:id/results", handler.MessagesBatchResults)
-	e.POST("/v1/responses/input_tokens", handler.ResponseInputTokens)
-	e.POST("/v1/responses/compact", handler.CompactResponse)
-	e.GET("/v1/responses/:id/input_items", handler.ListResponseInputItems)
-	e.POST("/v1/responses/:id/cancel", handler.CancelResponse)
-	e.GET("/v1/responses/:id", handler.GetResponse)
-	e.DELETE("/v1/responses/:id", handler.DeleteResponse)
-	e.POST("/v1/responses", handler.Responses)
-	e.POST("/v1/conversations", handler.CreateConversation)
-	e.POST("/v1/conversations/:id/items", handler.CreateConversationItems)
-	e.GET("/v1/conversations/:id/items", handler.ListConversationItems)
-	e.GET("/v1/conversations/:id/items/:item_id", handler.GetConversationItem)
-	e.DELETE("/v1/conversations/:id/items/:item_id", handler.DeleteConversationItem)
-	e.GET("/v1/conversations/:id", handler.GetConversation)
-	e.POST("/v1/conversations/:id", handler.UpdateConversation)
-	e.DELETE("/v1/conversations/:id", handler.DeleteConversation)
 	e.POST("/v1/embeddings", handler.Embeddings)
 	e.POST("/v1/audio/speech", handler.AudioSpeech)
 	e.POST("/v1/audio/transcriptions", handler.AudioTranscriptions)
@@ -521,8 +494,6 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 		echo:                    e,
 		handler:                 handler,
 		responseCacheMiddleware: rcm,
-		responseStore:           handler.currentResponseStore(),
-		conversationStore:       handler.conversationStore,
 	}
 }
 
@@ -578,24 +549,6 @@ func (s *Server) Shutdown(_ context.Context) error {
 		}
 	}
 	s.handler.drainSnapshotWrites()
-	if s.responseStore != nil {
-		if err := s.responseStore.Close(); err != nil {
-			if firstErr == nil {
-				firstErr = err
-			} else {
-				slog.Warn("response store close failed during shutdown", "error", err)
-			}
-		}
-	}
-	if s.conversationStore != nil {
-		if err := s.conversationStore.Close(); err != nil {
-			if firstErr == nil {
-				firstErr = err
-			} else {
-				slog.Warn("conversation store close failed during shutdown", "error", err)
-			}
-		}
-	}
 	return firstErr
 }
 

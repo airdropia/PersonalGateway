@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -17,12 +16,10 @@ import (
 
 	"github.com/airdropia/pgw/ext"
 	"github.com/airdropia/pgw/internal/auditlog"
-	"github.com/airdropia/pgw/internal/conversationstore"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/gateway"
 	"github.com/airdropia/pgw/internal/llmclient"
 	"github.com/airdropia/pgw/internal/responsecache"
-	"github.com/airdropia/pgw/internal/responsestore"
 	"github.com/airdropia/pgw/internal/streaming"
 	"github.com/airdropia/pgw/internal/usage"
 )
@@ -43,28 +40,15 @@ type translatedInferenceService struct {
 	pricingResolver          usage.PricingResolver
 	responseCache            *responsecache.ResponseCacheMiddleware
 	guardrailsHash           string
-	responseStore            responsestore.Store
-	responseStoreMu          sync.RWMutex
-	conversationStore        conversationstore.Store
-	conversationStoreMu      sync.RWMutex
-	// snapshotWrites tracks background response snapshot writes so shutdown
-	// can drain them before closing the response store. snapshotMu gates new
-	// writes against the drain: a handler that outlives the HTTP drain window
-	// must not register a write after drainSnapshotWrites has begun waiting.
-	snapshotWrites   sync.WaitGroup
-	snapshotMu       sync.RWMutex
-	snapshotDraining bool
 
 	orchestrator *gateway.InferenceOrchestrator
 
 	chatCompletionHandler echo.HandlerFunc
-	responsesHandler      echo.HandlerFunc
 }
 
 func (s *translatedInferenceService) initHandlers() {
 	s.orchestrator = s.newInferenceOrchestrator()
 	s.chatCompletionHandler = s.handleChatCompletion
-	s.responsesHandler = s.handleResponses
 }
 
 func (s *translatedInferenceService) inference() *gateway.InferenceOrchestrator {
@@ -175,14 +159,6 @@ func (s *translatedInferenceService) dispatchChatCompletion(c *echo.Context, req
 	return c.JSON(http.StatusOK, result.Response)
 }
 
-func (s *translatedInferenceService) Responses(c *echo.Context) error {
-	return s.responsesHandler(c)
-}
-
-func (s *translatedInferenceService) handleResponses(c *echo.Context) error {
-	return handleTranslatedJSON(s, c, core.DecodeResponsesRequest, prepareResponsesRequest, s.dispatchResponses)
-}
-
 func handleTranslatedJSON[Req any](
 	s *translatedInferenceService,
 	c *echo.Context,
@@ -214,23 +190,6 @@ func prepareChatCompletionRequest(
 	return unpackPrepared(ctx, prepared, err, chatPreparedFields)
 }
 
-func prepareResponsesRequest(
-	s *translatedInferenceService,
-	ctx context.Context,
-	req *core.ResponsesRequest,
-	meta gateway.RequestMeta,
-) (context.Context, *core.ResponsesRequest, *core.Workflow, error) {
-	prepared, err := s.inference().PrepareResponsesRequest(ctx, req, meta)
-	ctx, preparedReq, workflow, err := unpackPrepared(ctx, prepared, err, responsesPreparedFields)
-	if err != nil {
-		return ctx, preparedReq, workflow, err
-	}
-	// Resolve gateway-managed conversations before caching and dispatch so the
-	// cache key reflects the merged history and providers never see local IDs.
-	ctx, preparedReq, err = s.applyResponsesConversation(ctx, preparedReq)
-	return ctx, preparedReq, workflow, err
-}
-
 func unpackPrepared[Prepared any, Req any](
 	fallback context.Context,
 	prepared Prepared,
@@ -249,16 +208,11 @@ func chatPreparedFields(prepared *gateway.PreparedChatRequest) (context.Context,
 	return prepared.Context, prepared.Request, prepared.Workflow
 }
 
-func responsesPreparedFields(prepared *gateway.PreparedResponsesRequest) (context.Context, *core.ResponsesRequest, *core.Workflow) {
-	return prepared.Context, prepared.Request, prepared.Workflow
-}
-
 // handleWithCache routes translated requests through the response cache when
 // enabled. The request has already been resolved and patched by the orchestrator.
 // Cache hits intentionally return before dispatch and budget enforcement because
 // they do not incur provider spend. Cache misses still run dispatch, where
-// dispatchChatCompletion and dispatchResponses call enforceBudget before any
-// provider request.
+// dispatchChatCompletion calls enforceBudget before any provider request.
 func handleWithCache[R any](
 	s *translatedInferenceService,
 	c *echo.Context,
@@ -266,12 +220,6 @@ func handleWithCache[R any](
 	workflow *core.Workflow,
 	dispatch func(*echo.Context, R, *core.Workflow) error,
 ) error {
-	// Conversation turns are stateful: the same input means something different
-	// as the conversation grows, and a cache hit would skip the history append.
-	if conversationTurnFromContext(c.Request().Context()) != nil {
-		return dispatch(c, req, workflow)
-	}
-
 	if s.responseCache != nil && (workflow == nil || workflow.CacheEnabled()) {
 		body, marshalErr := marshalRequestBody(req)
 		if marshalErr != nil {
@@ -284,216 +232,6 @@ func handleWithCache[R any](
 	}
 
 	return dispatch(c, req, workflow)
-}
-
-func (s *translatedInferenceService) dispatchResponses(c *echo.Context, req *core.ResponsesRequest, workflow *core.Workflow) error {
-	s.observeLiveProviderAttempts(c, workflow)
-	ctx := c.Request().Context()
-	requestID := requestIDFromContextOrHeader(c.Request())
-
-	adm, err := enforceAdmission(c, s.rateLimiter, s.budgetChecker,
-		rateLimitRouteFromWorkflow(workflow).withFailovers(len(s.inference().FailoverSelectors(workflow))))
-	if err != nil {
-		return handleError(c, err)
-	}
-	defer adm.release()
-	ctx = adm.dispatchContext(ctx)
-
-	if req.Stream {
-		if hasResponseFeedbackObservers(c) {
-			ctx = core.WithEnforceReturningUsageData(ctx, true)
-		}
-		result, err := s.inference().StreamResponses(ctx, workflow, req)
-		if err != nil {
-			return handleStreamingDispatchError(c, err)
-		}
-		if result.Meta.UsedFailover {
-			markRequestFailoverUsed(c)
-		}
-		stream := result.Stream
-		if turn := conversationTurnFromContext(ctx); turn != nil {
-			stream = turn.persistingStream(ctx, stream)
-		}
-		return s.handleStreamingReadCloser(
-			c,
-			workflow,
-			result.Meta.Model,
-			result.Meta.ProviderType,
-			result.Meta.ProviderName,
-			result.Meta.FailoverModel,
-			stream,
-			func(stream io.ReadCloser) io.ReadCloser {
-				return result.WrapDeliveryStream(ctx, stream)
-			},
-		)
-	}
-
-	result, err := s.inference().ExecuteResponses(ctx, workflow, req, requestID, "/v1/responses")
-	if err != nil {
-		return handleError(c, err)
-	}
-	enrichAuditEntryWithProviderAttempts(c)
-	if result.Meta.UsedFailover {
-		markRequestFailoverUsed(c)
-		auditlog.EnrichEntryWithFailover(c, result.Meta.FailoverModel)
-	}
-	auditlog.EnrichEntryWithResolvedRoute(
-		c,
-		qualifyExecutedModel(workflow, result.Response.Model, result.Meta.ProviderName),
-		result.Meta.ProviderType,
-		result.Meta.ProviderName,
-	)
-	notifyResponsesResponseFeedback(
-		c,
-		ext.Endpoint(c.Request().URL.Path),
-		result.Response,
-		result.Meta.Model,
-		result.Meta.ProviderType,
-		result.Meta.ProviderName,
-	)
-
-	if turn := conversationTurnFromContext(ctx); turn != nil {
-		// Detach cancellation so a client disconnect after provider success
-		// cannot lose the completed turn, mirroring the streaming observer.
-		if err := turn.appendResponse(context.WithoutCancel(ctx), result.Response); err != nil {
-			return handleError(c, core.NewProviderError(
-				"conversation_store", http.StatusInternalServerError, "failed to append conversation turn", err,
-			))
-		}
-	}
-	s.storeResponseSnapshotAsync(ctx, workflow, req, result.Response, result.Meta.ProviderType, result.Meta.ProviderName, requestID)
-
-	return c.JSON(http.StatusOK, result.Response)
-}
-
-// snapshotWriteTimeout bounds one background snapshot write. It covers the
-// Create plus the Update fallback, each of which can wait up to SQLite's 5s
-// busy timeout on the shared connection.
-const snapshotWriteTimeout = 15 * time.Second
-
-// storeResponseSnapshotAsync persists the response snapshot off the request
-// path so the client never waits on storage. A failed write is already
-// non-fatal on the synchronous path (metric plus warning), so deferring it
-// only changes when the failure is observed. The snapshot is detached
-// (serialized) before the goroutine starts: the background write must not
-// share memory with the response the handler is concurrently serializing to
-// the client. The write context is detached from request cancellation, which
-// ends the moment the response is sent. drainSnapshotWrites waits for
-// in-flight writes at shutdown.
-func (s *translatedInferenceService) storeResponseSnapshotAsync(ctx context.Context, workflow *core.Workflow, req *core.ResponsesRequest, resp *core.ResponsesResponse, providerType, providerName, requestID string) {
-	store := s.currentResponseStore()
-	if store == nil || resp == nil || resp.ID == "" {
-		return
-	}
-	if req != nil && req.Store != nil && !*req.Store {
-		return
-	}
-
-	failure := snapshotFailureRecord{
-		providerType:      providerType,
-		providerName:      providerName,
-		requestID:         requestID,
-		workflowVersionID: workflow.WorkflowVersionID(),
-		responseID:        resp.ID,
-	}
-	snapshot, err := responsestore.Detach(&responsestore.StoredResponse{
-		Response:           resp,
-		InputItems:         normalizedResponseInputItems(resp.ID, req),
-		Provider:           strings.TrimSpace(providerType),
-		ProviderName:       strings.TrimSpace(providerName),
-		ProviderResponseID: resp.ID,
-		RequestID:          requestID,
-		UserPath:           core.UserPathFromContext(ctx),
-		WorkflowVersionID:  workflow.WorkflowVersionID(),
-	})
-	if err != nil {
-		s.recordResponseSnapshotStoreFailure(failure, err)
-		return
-	}
-
-	writeCtx := context.WithoutCancel(ctx)
-	scheduled := s.goSnapshotWrite(func() {
-		writeCtx, cancel := context.WithTimeout(writeCtx, snapshotWriteTimeout)
-		defer cancel()
-		if err := snapshot.Persist(writeCtx, store); err != nil {
-			s.recordResponseSnapshotStoreFailure(failure, err)
-		}
-	})
-	if !scheduled {
-		s.recordResponseSnapshotStoreFailure(failure, errors.New("server shutting down, snapshot write skipped"))
-	}
-}
-
-// goSnapshotWrite runs fn as a tracked background snapshot write. It reports
-// false without running fn when draining has begun: registering a write after
-// drainSnapshotWrites starts waiting would race the WaitGroup and could touch
-// a store that shutdown already closed. The read lock is held across the
-// WaitGroup registration so the drain cannot observe it as untracked.
-func (s *translatedInferenceService) goSnapshotWrite(fn func()) bool {
-	s.snapshotMu.RLock()
-	defer s.snapshotMu.RUnlock()
-	if s.snapshotDraining {
-		return false
-	}
-	s.snapshotWrites.Go(fn)
-	return true
-}
-
-// drainSnapshotWrites stops accepting new background snapshot writes and
-// blocks until every in-flight one finishes. The server calls it during
-// shutdown, before the response store closes; writes attempted afterwards are
-// skipped and recorded as store failures.
-func (s *translatedInferenceService) drainSnapshotWrites() {
-	s.snapshotMu.Lock()
-	s.snapshotDraining = true
-	s.snapshotMu.Unlock()
-	s.snapshotWrites.Wait()
-}
-
-func (s *translatedInferenceService) currentResponseStore() responsestore.Store {
-	s.responseStoreMu.RLock()
-	defer s.responseStoreMu.RUnlock()
-	return s.responseStore
-}
-
-func (s *translatedInferenceService) setResponseStore(store responsestore.Store) {
-	s.responseStoreMu.Lock()
-	defer s.responseStoreMu.Unlock()
-	s.responseStore = store
-}
-
-func (s *translatedInferenceService) currentConversationStore() conversationstore.Store {
-	s.conversationStoreMu.RLock()
-	defer s.conversationStoreMu.RUnlock()
-	return s.conversationStore
-}
-
-func (s *translatedInferenceService) setConversationStore(store conversationstore.Store) {
-	s.conversationStoreMu.Lock()
-	defer s.conversationStoreMu.Unlock()
-	s.conversationStore = store
-}
-
-// snapshotFailureRecord carries the identifiers a snapshot-write failure is
-// reported with. All fields are plain strings captured on the request path so
-// the background goroutine never touches request-owned structs.
-type snapshotFailureRecord struct {
-	providerType      string
-	providerName      string
-	requestID         string
-	workflowVersionID string
-	responseID        string
-}
-
-func (s *translatedInferenceService) recordResponseSnapshotStoreFailure(rec snapshotFailureRecord, err error) {
-	slog.Warn("response snapshot store failed",
-		"request_id", rec.requestID,
-		"provider_type", rec.providerType,
-		"provider_name", rec.providerName,
-		"workflow_version_id", rec.workflowVersionID,
-		"response_id", strings.TrimSpace(rec.responseID),
-		"error", err,
-	)
 }
 
 func (s *translatedInferenceService) tryFastPathStreamingChatPassthrough(c *echo.Context, workflow *core.Workflow, req *core.ChatRequest) (bool, error) {

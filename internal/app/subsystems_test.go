@@ -150,9 +150,7 @@ func TestNonShutdownOwnedSubsystemsAreRegisteredButNotInShutdownOrder(t *testing
 	}
 
 	for name, wantOwner := range map[string]closerOwner{
-		subsystemResponseStore:     ownedByServer,
-		subsystemConversationStore: ownedByServer,
-		subsystemResponseCache:     ownedByServer,
+		subsystemResponseCache: ownedByServer,
 	} {
 		owner, ok := owners[name]
 		if !ok {

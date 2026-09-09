@@ -50,8 +50,6 @@ const (
 	subsystemRateLimits          = "rate limits"
 	subsystemBatch               = "batch store"
 	subsystemFileStore           = "file store"
-	subsystemResponseStore       = "response store"
-	subsystemConversationStore   = "conversation store"
 	subsystemProviderCredentials = "provider credentials"
 	subsystemVirtualModels       = "virtual models"
 	subsystemModelPreferences    = "model preferences"

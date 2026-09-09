@@ -24,7 +24,6 @@ import (
 	"github.com/airdropia/pgw/internal/auditlog"
 	"github.com/airdropia/pgw/internal/batch"
 	"github.com/airdropia/pgw/internal/budget"
-	"github.com/airdropia/pgw/internal/conversationstore"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/guardrails"
 	"github.com/airdropia/pgw/internal/filestore"
@@ -37,7 +36,6 @@ import (
 	"github.com/airdropia/pgw/internal/providers/health"
 	"github.com/airdropia/pgw/internal/ratelimit"
 	"github.com/airdropia/pgw/internal/responsecache"
-	"github.com/airdropia/pgw/internal/responsestore"
 	"github.com/airdropia/pgw/internal/server"
 	"github.com/airdropia/pgw/internal/session"
 	"github.com/airdropia/pgw/internal/storage"
@@ -58,8 +56,6 @@ type App struct {
 	rateLimits          *ratelimit.Result
 	batch               *batch.Result
 	fileStore           *filestore.Result
-	responseStore       *responsestore.Result
-	conversations       *conversationstore.Result
 	virtualModels       *virtualmodels.Result
 	tagging             *tagging.Result
 	mcpGateway          *mcpgateway.Result
@@ -454,25 +450,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	app.fileStore = fileStoreResult
 	app.register(subsystemFileStore, ownedByShutdown, app.fileStore.Close)
 
-	// Initialize Responses/Conversations lifecycle persistence so agentic
-	// response chains and conversation history land in storage instead of
-	// accumulating in process memory.
-	var responseStoreResult *responsestore.Result
-	responseStoreResult, err = responsestore.New(ctx, sharedStorage)
-	if err != nil {
-		return fail("failed to initialize response snapshot storage", err)
-	}
-	app.responseStore = responseStoreResult
-	app.register(subsystemResponseStore, ownedByServer, app.responseStore.Close)
-
-	var conversationStoreResult *conversationstore.Result
-	conversationStoreResult, err = conversationstore.New(ctx, sharedStorage)
-	if err != nil {
-		return fail("failed to initialize conversation storage", err)
-	}
-	app.conversations = conversationStoreResult
-	app.register(subsystemConversationStore, ownedByServer, app.conversations.Close)
-
 	// Initialize virtual models (unified aliases + access overrides) using
 	// shared storage when already available. Provider names declared in YAML —
 	// including entries whose credentials did not resolve, which never register —
@@ -712,8 +689,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		PassthroughSemanticEnrichers:    cfg.Factory.PassthroughSemanticEnrichers(),
 		BatchStore:                      batchResult.Store,
 		FileStore:                       fileStoreResult.Store,
-		ResponseStore:                   responseStoreResult.Store,
-		ConversationStore:               conversationStoreResult.Store,
 		LogOnlyModelInteractions:        appCfg.Logging.OnlyModelInteractions,
 		DisablePassthroughRoutes:        !appCfg.Server.EnablePassthroughRoutes,
 		EnabledPassthroughProviders:     appCfg.Server.EnabledPassthroughProviders,
