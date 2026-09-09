@@ -1744,67 +1744,6 @@ func TestBatches_UsesExplicitGuardrailBatchPreparer(t *testing.T) {
 	}
 }
 
-	provider := &capturingProvider{
-		supportedModels: []string{"text-embedding-3-large"},
-		embeddingResponse: &core.EmbeddingResponse{
-			Object: "list",
-			Model:  "text-embedding-3-large",
-			Data: []core.EmbeddingData{
-				{Object: "embedding", Embedding: json.RawMessage(`[0.1,0.2]`), Index: 0},
-			},
-		},
-	}
-
-	e := echo.New()
-	handler := NewHandler(provider, nil, nil, nil)
-
-	req := httptest.NewRequest(http.MethodPost, "/v1/embeddings", nil)
-	req.Header.Set("Content-Type", "application/json")
-	req.Body = &explodingReadCloser{}
-
-	frame := core.NewRequestSnapshot(
-		http.MethodPost,
-		"/v1/embeddings",
-		nil,
-		nil,
-		nil,
-		"application/json",
-		[]byte(`{
-			"model":"text-embedding-3-large",
-			"input":"hello",
-			"x_meta":{"trace":"abc"}
-		}`),
-		false,
-		"",
-		nil,
-	)
-	req = withRequestSnapshotAndPrompt(req, frame)
-
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	if err := handler.Embeddings(c); err != nil {
-		t.Fatalf("handler returned error: %v", err)
-	}
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d (%s)", rec.Code, rec.Body.String())
-	}
-	if provider.capturedEmbeddingReq == nil {
-		t.Fatal("expected embeddings request to be captured")
-	}
-	if provider.capturedEmbeddingReq.ExtraFields.Lookup("x_meta") == nil {
-		t.Fatalf("x_meta missing from ExtraFields: %+v", provider.capturedEmbeddingReq.ExtraFields)
-	}
-
-	env := core.GetWhiteBoxPrompt(c.Request().Context())
-	if env == nil || env.CachedEmbeddingRequest() == nil {
-		t.Fatalf("expected semantic envelope to cache EmbeddingRequest, got %+v", env)
-	}
-	if env.CachedEmbeddingRequest() != provider.capturedEmbeddingReq {
-		t.Fatal("cached EmbeddingRequest does not match provider request")
-	}
-}
-
 func TestBatches_UsesIngressFrameForDecoding(t *testing.T) {
 	mock := &mockProvider{
 		supportedModels: []string{"gpt-4o-mini"},
