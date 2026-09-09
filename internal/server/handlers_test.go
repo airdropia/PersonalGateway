@@ -1744,8 +1744,6 @@ func TestBatches_UsesExplicitGuardrailBatchPreparer(t *testing.T) {
 	}
 }
 
-func TestResponses_UsesIngressFrameForDecoding(t *testing.T) {
-func TestEmbeddings_UsesIngressFrameForDecoding(t *testing.T) {
 	provider := &capturingProvider{
 		supportedModels: []string{"text-embedding-3-large"},
 		embeddingResponse: &core.EmbeddingResponse{
