@@ -13,7 +13,6 @@ import (
 	"github.com/airdropia/pgw/config"
 	"github.com/airdropia/pgw/internal/cache"
 	"github.com/airdropia/pgw/internal/core"
-	"github.com/airdropia/pgw/internal/embedding"
 	"github.com/airdropia/pgw/internal/usage"
 )
 
@@ -37,8 +36,7 @@ var internalRequestHeaderAllowlist = map[string]struct{}{
 
 // ResponseCacheMiddleware wraps response cache logic. App and server only see this type.
 type ResponseCacheMiddleware struct {
-	simple   *simpleCacheMiddleware
-	semantic *semanticCacheMiddleware
+	simple *simpleCacheMiddleware
 }
 
 // InternalHandleResult is the buffered result of running the cache middleware
@@ -90,36 +88,6 @@ func NewResponseCacheMiddleware(
 		slog.Info("response cache (simple/exact) enabled", "ttl_seconds", cfg.Simple.Redis.TTL, "prefix", prefix)
 	}
 
-	sem := cfg.Semantic
-	if sem != nil && config.SemanticCacheActive(sem) {
-		emb, err := embedding.NewEmbedder(sem.Embedder, resolvedProviders)
-		if err != nil {
-			if m.simple != nil {
-				_ = m.simple.close()
-			}
-			return nil, err
-		}
-		vs, err := NewVecStore(sem.VectorStore)
-		if err != nil {
-			_ = emb.Close()
-			if m.simple != nil {
-				_ = m.simple.close()
-			}
-			return nil, err
-		}
-		m.semantic = newSemanticCacheMiddleware(emb, vs, *sem, hitRecorder)
-		ttlLog := 0
-		if sem.TTL != nil {
-			ttlLog = *sem.TTL
-		}
-		slog.Info("response cache (semantic) enabled",
-			"threshold", sem.SimilarityThreshold,
-			"ttl_seconds", ttlLog,
-			"vector_store", sem.VectorStore.Type,
-			"embedder", sem.Embedder.Provider,
-		)
-	}
-
 	return m, nil
 }
 
@@ -143,28 +111,13 @@ func (m *ResponseCacheMiddleware) handle(ex exchange, body []byte, next func() e
 		return next()
 	}
 
-	skipExact := strings.EqualFold(ex.RequestHeader("X-Cache-Type"), CacheTypeSemantic)
-	skipSemantic := m.semantic == nil || strings.EqualFold(ex.RequestHeader("X-Cache-Type"), CacheTypeExact)
-
 	if !skipExact && m.simple != nil {
-		hit, err := m.simple.TryHit(ex, body)
-		if err != nil || hit {
+		if hit, err := m.simple.TryHit(ex, body); err != nil || hit {
 			return err
 		}
+		return m.simple.StoreAfter(ex, body, next)
 	}
-
-	// innerNext is what actually calls the LLM. When exact caching is active we
-	// wrap next inside StoreAfter so both cache layers write on a full miss.
-	innerNext := next
-	if !skipExact && m.simple != nil {
-		innerNext = func() error { return m.simple.StoreAfter(ex, body, next) }
-	}
-
-	if !skipSemantic {
-		return m.semantic.Handle(ex, body, innerNext)
-	}
-
-	return innerNext()
+	return next()
 }
 
 // HandleInternalRequest runs the cache for a transport-free internal JSON
@@ -224,20 +177,10 @@ func (m *ResponseCacheMiddleware) Ping(ctx context.Context) error {
 
 // Close waits for any in-flight cache writes to complete, then releases cache resources.
 func (m *ResponseCacheMiddleware) Close() error {
-	if m == nil {
+	if m == nil || m.simple == nil {
 		return nil
 	}
-	var simErr, semErr error
-	if m.simple != nil {
-		simErr = m.simple.close()
-	}
-	if m.semantic != nil {
-		semErr = m.semantic.close()
-	}
-	if simErr != nil {
-		return simErr
-	}
-	return semErr
+	return m.simple.close()
 }
 
 func internalRequestHeaders(ctx context.Context) http.Header {

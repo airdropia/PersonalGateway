@@ -86,7 +86,6 @@ type Config struct {
 	FileStore                       filestore.Store                        // Optional: File provider mapping persistence store
 	LogOnlyModelInteractions        bool                                   // Only log AI model endpoints (default: true)
 	DisablePassthroughRoutes        bool                                   // Disable /p/{provider}/{endpoint} route registration
-	RealtimeEnabled                 bool                                   // Enable the realtime websocket routes (/v1/realtime, /v1/realtime/translations) and passthrough upgrades
 	MCPEnabled                      bool                                   // Enable the MCP gateway routes /mcp and /mcp/{server}
 	MCPGateway                      *mcpgateway.Service                    // MCP gateway service (nil if disabled or not wired)
 	EnabledPassthroughProviders     []string                               // Provider types enabled on /p/{provider}/... passthrough routes
@@ -189,9 +188,6 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 	if cfg != nil && cfg.EnabledPassthroughProviders != nil {
 		handler.setEnabledPassthroughProviders(cfg.EnabledPassthroughProviders)
 	}
-	// Mirror the route-registration default below: a nil config enables realtime
-	// so the documented default and the registered route stay consistent.
-	handler.realtimeEnabled = cfg == nil || cfg.RealtimeEnabled
 	if cfg != nil {
 		handler.mcpEnabled = cfg.MCPEnabled
 		handler.mcpGateway = cfg.MCPGateway
@@ -405,28 +401,6 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 	e.POST("/v1/chat/completions", handler.ChatCompletion)
 	e.POST("/v1/messages", handler.Messages)
 	e.POST("/v1/messages/count_tokens", handler.CountMessageTokens)
-	e.POST("/v1/messages/batches", handler.MessagesBatches)
-	e.GET("/v1/messages/batches", handler.ListMessagesBatches)
-	e.GET("/v1/messages/batches/:id", handler.GetMessagesBatch)
-	e.POST("/v1/messages/batches/:id/cancel", handler.CancelMessagesBatch)
-	e.DELETE("/v1/messages/batches/:id", handler.DeleteMessagesBatch)
-	e.GET("/v1/messages/batches/:id/results", handler.MessagesBatchResults)
-	e.POST("/v1/embeddings", handler.Embeddings)
-	e.POST("/v1/audio/speech", handler.AudioSpeech)
-	e.POST("/v1/audio/transcriptions", handler.AudioTranscriptions)
-	e.POST("/v1/audio/translations", handler.AudioTranslations)
-	e.POST("/v1/images/generations", handler.ImageGenerations)
-	e.POST("/v1/images/edits", handler.ImageEdits)
-	if cfg == nil || cfg.RealtimeEnabled {
-		e.GET("/v1/realtime", handler.Realtime)
-		e.POST("/v1/realtime/calls", handler.RealtimeCalls)
-		e.POST("/v1/realtime/client_secrets", handler.RealtimeClientSecrets)
-		// Speech translation sessions have their own provider surface; the
-		// gateway mirrors it so OpenAI clients need no rewriting.
-		e.GET("/v1/realtime/translations", handler.RealtimeTranslations)
-		e.POST("/v1/realtime/translations/calls", handler.RealtimeTranslationCalls)
-		e.POST("/v1/realtime/translations/client_secrets", handler.RealtimeTranslationClientSecrets)
-	}
 	if cfg != nil && cfg.MCPEnabled && cfg.MCPGateway != nil {
 		e.POST("/mcp", handler.MCP)
 		e.GET("/mcp", handler.MCP)
@@ -435,16 +409,6 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 		e.GET("/mcp/:server", handler.MCPServer)
 		e.DELETE("/mcp/:server", handler.MCPServer)
 	}
-	e.POST("/v1/files", handler.CreateFile)
-	e.GET("/v1/files", handler.ListFiles)
-	e.GET("/v1/files/:id", handler.GetFile)
-	e.DELETE("/v1/files/:id", handler.DeleteFile)
-	e.GET("/v1/files/:id/content", handler.GetFileContent)
-	e.POST("/v1/batches", handler.Batches)
-	e.GET("/v1/batches", handler.ListBatches)
-	e.GET("/v1/batches/:id", handler.GetBatch)
-	e.POST("/v1/batches/:id/cancel", handler.CancelBatch)
-	e.GET("/v1/batches/:id/results", handler.BatchResults)
 
 	// Admin API routes (behind ADMIN_ENDPOINTS_ENABLED flag). Managed keys
 	// need dashboard access to pass the gate; the master key always does.
