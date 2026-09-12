@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v5"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/airdropia/pgw/internal/auditlog"
