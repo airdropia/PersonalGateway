@@ -10,9 +10,7 @@ import (
 
 	"github.com/airdropia/pgw/internal/anthropicapi"
 	"github.com/airdropia/pgw/internal/auditlog"
-	batchstore "github.com/airdropia/pgw/internal/batch"
 	"github.com/airdropia/pgw/internal/core"
-	"github.com/airdropia/pgw/internal/filestore"
 	"github.com/airdropia/pgw/internal/mcpgateway"
 	"github.com/airdropia/pgw/internal/responsecache"
 	"github.com/airdropia/pgw/internal/usage"
@@ -26,7 +24,6 @@ type Handler struct {
 	failoverResolver                RequestFailoverResolver
 	workflowPolicyResolver          RequestWorkflowPolicyResolver
 	translatedRequestPatcher        TranslatedRequestPatcher
-	batchRequestPreparer            BatchRequestPreparer
 	exposedModelLister              ExposedModelLister
 	keepOnlyAliasesAtModelsEndpoint bool
 	logger                          auditlog.LoggerInterface
@@ -36,8 +33,6 @@ type Handler struct {
 	usageSummarizer                 UsageSummarizer
 	userPathHeaderName              string
 	pricingResolver                 usage.PricingResolver
-	batchStore                      batchstore.Store
-	fileStore                       filestore.Store
 	// storesMu guards translatedSvc wiring.
 	storesMu                     sync.RWMutex
 	normalizePassthroughV1Prefix bool
@@ -76,29 +71,9 @@ func newHandlerWithAuthorizer(
 		logger:                   logger,
 		usageLogger:              usageLogger,
 		pricingResolver:          pricingResolver,
-		batchStore:               batchstore.NewMemoryStore(),
-		fileStore:                filestore.NewMemoryStore(),
 		normalizePassthroughV1Prefix:    true,
 		enabledPassthroughProviders:     normalizeEnabledPassthroughProviders(defaultEnabledPassthroughProviders),
 	}
-}
-
-// SetBatchStore replaces the batch store used by lifecycle endpoints.
-// nil is ignored to keep an always-available fallback memory store.
-func (h *Handler) SetBatchStore(store batchstore.Store) {
-	if store == nil {
-		return
-	}
-	h.batchStore = store
-}
-
-// SetFileStore replaces the file provider mapping store.
-// nil is ignored to keep an always-available fallback memory store.
-func (h *Handler) SetFileStore(store filestore.Store) {
-	if store == nil {
-		return
-	}
-	h.fileStore = store
 }
 
 func (h *Handler) translatedInference() *translatedInferenceService {
@@ -126,65 +101,6 @@ func (h *Handler) translatedInference() *translatedInferenceService {
 	h.storesMu.RLock()
 	defer h.storesMu.RUnlock()
 	return h.translatedSvc
-}
-
-func (h *Handler) nativeBatch() *nativeBatchService {
-	return &nativeBatchService{
-		provider:                             h.provider,
-		modelResolver:                        h.modelResolver,
-		modelAuthorizer:                      h.modelAuthorizer,
-		inputFileProviderResolver:            newBatchInputFileProviderResolver(h.provider, h.fileStore),
-		workflowPolicyResolver:               h.workflowPolicyResolver,
-		batchRequestPreparer:                 h.batchRequestPreparer,
-		batchStore:                           h.batchStore,
-		cleanupPreparedBatchInputFile:        h.cleanupPreparedBatchInputFile,
-		cleanupStoredBatchRewrittenInputFile: h.cleanupStoredBatchRewrittenInputFile,
-		usageLogger:                          h.usageLogger,
-		budgetChecker:                        h.budgetChecker,
-		rateLimiter:                          h.rateLimiter,
-		pricingResolver:                      h.pricingResolver,
-	}
-}
-
-func (h *Handler) nativeFiles() *nativeFileService {
-	return &nativeFileService{provider: h.provider, fileStore: h.fileStore}
-}
-
-func (h *Handler) modelCalls() modelCallService {
-	return modelCallService{
-		provider:        h.provider,
-		modelResolver:   h.modelResolver,
-		modelAuthorizer: h.modelAuthorizer,
-		budgetChecker:   h.budgetChecker,
-		rateLimiter:     h.rateLimiter,
-		usageLogger:     h.usageLogger,
-		pricingResolver: h.pricingResolver,
-	}
-}
-
-func (h *Handler) audio() *audioService {
-	var logBodies, logAudioBodies bool
-	if h.logger != nil {
-		cfg := h.logger.Config()
-		logBodies = cfg.LogBodies
-		logAudioBodies = cfg.LogAudioBodies
-	}
-	return &audioService{
-		modelCallService: h.modelCalls(),
-		logBodies:        logBodies,
-		logAudioBodies:   logAudioBodies,
-	}
-}
-
-func (h *Handler) images() *imageService {
-	svc := &imageService{modelCallService: h.modelCalls()}
-	if h.logger != nil {
-		cfg := h.logger.Config()
-		svc.logBodies = cfg.LogBodies
-		svc.logImageInputs = cfg.LogImageInputs
-		svc.logImageOutputs = cfg.LogImageOutputs
-	}
-	return svc
 }
 
 func (h *Handler) mcp() *mcpService {
@@ -401,306 +317,5 @@ func (h *Handler) ListModels(c *echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// CreateFile handles POST /v1/files.
-//
-// @Summary      Upload a file
-// @Tags         files
-// @Accept       mpfd
-// @Produce      json
-// @Security     BearerAuth
-// @Param        provider  query     string  false  "Provider override when multiple providers are configured"
-// @Param        purpose   formData  string  true   "File purpose"
-// @Param        file      formData  file    true   "File to upload"
-// @Success      200       {object}  core.FileObject
-// @Failure      400       {object}  core.OpenAIErrorEnvelope
-// @Failure      401       {object}  core.OpenAIErrorEnvelope
-// @Failure      502       {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/files [post]
-func (h *Handler) CreateFile(c *echo.Context) error {
-	return h.nativeFiles().CreateFile(c)
-}
-
-// ListFiles handles GET /v1/files.
-//
-// @Summary      List files
-// @Tags         files
-// @Produce      json
-// @Security     BearerAuth
-// @Param        provider  query     string  false  "Provider filter"
-// @Param        purpose   query     string  false  "File purpose filter"
-// @Param        after     query     string  false  "Pagination cursor"
-// @Param        limit     query     int     false  "Maximum items to return (1-100, default 20)"
-// @Success      200       {object}  core.FileListResponse
-// @Failure      400       {object}  core.OpenAIErrorEnvelope
-// @Failure      401       {object}  core.OpenAIErrorEnvelope
-// @Failure      404       {object}  core.OpenAIErrorEnvelope
-// @Failure      502       {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/files [get]
-func (h *Handler) ListFiles(c *echo.Context) error {
-	return h.nativeFiles().ListFiles(c)
-}
-
-// GetFile handles GET /v1/files/{id}.
-//
-// @Summary      Get file metadata
-// @Tags         files
-// @Produce      json
-// @Security     BearerAuth
-// @Param        id        path      string  true   "File ID"
-// @Param        provider  query     string  false  "Provider override"
-// @Success      200       {object}  core.FileObject
-// @Failure      400       {object}  core.OpenAIErrorEnvelope
-// @Failure      401       {object}  core.OpenAIErrorEnvelope
-// @Failure      404       {object}  core.OpenAIErrorEnvelope
-// @Failure      502       {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/files/{id} [get]
-func (h *Handler) GetFile(c *echo.Context) error {
-	return h.nativeFiles().GetFile(c)
-}
-
-// DeleteFile handles DELETE /v1/files/{id}.
-//
-// @Summary      Delete a file
-// @Tags         files
-// @Produce      json
-// @Security     BearerAuth
-// @Param        id        path      string  true   "File ID"
-// @Param        provider  query     string  false  "Provider override"
-// @Success      200       {object}  core.FileDeleteResponse
-// @Failure      400       {object}  core.OpenAIErrorEnvelope
-// @Failure      401       {object}  core.OpenAIErrorEnvelope
-// @Failure      404       {object}  core.OpenAIErrorEnvelope
-// @Failure      502       {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/files/{id} [delete]
-func (h *Handler) DeleteFile(c *echo.Context) error {
-	return h.nativeFiles().DeleteFile(c)
-}
-
-// GetFileContent handles GET /v1/files/{id}/content.
-//
-// @Summary      Download file content
-// @Tags         files
-// @Produce      application/octet-stream
-// @Security     BearerAuth
-// @Param        id        path   string  true   "File ID"
-// @Param        provider  query  string  false  "Provider override"
-// @Success      200       {file}  file  "Raw file content"
-// @Failure      400       {object}  core.OpenAIErrorEnvelope
-// @Failure      401       {object}  core.OpenAIErrorEnvelope
-// @Failure      404       {object}  core.OpenAIErrorEnvelope
-// @Failure      502       {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/files/{id}/content [get]
-func (h *Handler) GetFileContent(c *echo.Context) error {
-	return h.nativeFiles().GetFileContent(c)
-}
-
-// AudioSpeech handles POST /v1/audio/speech.
-//
-// @Summary      Create speech (text-to-speech)
-// @Tags         audio
-// @Accept       json
-// @Produce      application/octet-stream
-// @Security     BearerAuth
-// @Param        request  body      core.AudioSpeechRequest  true  "Text-to-speech request"
-// @Success      200      {file}    file  "Binary audio in the requested response_format"
-// @Failure      400      {object}  core.OpenAIErrorEnvelope
-// @Failure      401      {object}  core.OpenAIErrorEnvelope
-// @Failure      404      {object}  core.OpenAIErrorEnvelope
-// @Failure      502      {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/audio/speech [post]
-func (h *Handler) AudioSpeech(c *echo.Context) error {
-	return h.audio().CreateSpeech(c)
-}
-
-// AudioTranscriptions handles POST /v1/audio/transcriptions.
-//
-// @Summary      Create transcription (speech-to-text)
-// @Tags         audio
-// @Accept       mpfd
-// @Produce      json
-// @Produce      plain
-// @Security     BearerAuth
-// @Param        file             formData  file    true   "Audio file to transcribe"
-// @Param        model            formData  string  true   "Model ID"
-// @Param        language         formData  string  false  "Input language (ISO-639-1)"
-// @Param        prompt           formData  string  false  "Optional text to guide the model"
-// @Param        response_format          formData  string    false  "json, text, srt, verbose_json, or vtt"
-// @Param        temperature              formData  number    false  "Sampling temperature (0-1)"
-// @Param        timestamp_granularities[] formData  []string  false  "Timestamp granularities to populate: word and/or segment"
-// @Success      200                      {object}  map[string]interface{}  "Transcription in the requested response_format: a JSON object for json/verbose_json, or a text/plain body for text/srt/vtt"
-// @Failure      400              {object}  core.OpenAIErrorEnvelope
-// @Failure      401              {object}  core.OpenAIErrorEnvelope
-// @Failure      404              {object}  core.OpenAIErrorEnvelope
-// @Failure      502              {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/audio/transcriptions [post]
-func (h *Handler) AudioTranscriptions(c *echo.Context) error {
-	return h.audio().CreateTranscription(c)
-}
-
-// ImageGenerations handles POST /v1/images/generations.
-//
-// @Summary      Create image (image generation)
-// @Tags         images
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        request  body      core.ImageGenerationRequest  true  "Image generation request"
-// @Success      200      {object}  core.ImageGenerationResponse
-// @Failure      400      {object}  core.OpenAIErrorEnvelope
-// @Failure      401      {object}  core.OpenAIErrorEnvelope
-// @Failure      404      {object}  core.OpenAIErrorEnvelope
-// @Failure      429      {object}  core.OpenAIErrorEnvelope
-// @Failure      502      {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/images/generations [post]
-func (h *Handler) ImageGenerations(c *echo.Context) error {
-	return h.images().CreateImage(c)
-}
-
-// ImageEdits handles POST /v1/images/edits.
-//
-// @Summary      Create image edit (inpainting / image-to-image)
-// @Tags         images
-// @Accept       mpfd
-// @Produce      json
-// @Security     BearerAuth
-// @Param        image            formData  file    false  "Source image to edit (single-image form; gpt-image-1 and DALL·E 2). At least one of image or image[] is required"
-// @Param        image[]          formData  file    false  "Repeatable field carrying several source images (gpt-image-1, up to 16). At least one of image or image[] is required"
-// @Param        prompt           formData  string  true   "Text description of the desired edit"
-// @Param        model            formData  string  true   "Model ID"
-// @Param        mask             formData  file    false  "PNG whose transparent areas mark where the image should be edited"
-// @Param        n                formData  integer false  "Number of images to generate"  minimum(1)
-// @Param        size             formData  string  false  "Output size, e.g. 1024x1024"
-// @Param        quality          formData  string  false  "Output quality (model-specific)"
-// @Param        response_format  formData  string  false  "url or b64_json (DALL·E 2 only; gpt-image-1 always returns b64_json)"
-// @Param        user             formData  string  false  "End-user identifier forwarded to the provider"
-// @Success      200      {object}  core.ImageGenerationResponse
-// @Failure      400      {object}  core.OpenAIErrorEnvelope
-// @Failure      401      {object}  core.OpenAIErrorEnvelope
-// @Failure      404      {object}  core.OpenAIErrorEnvelope
-// @Failure      429      {object}  core.OpenAIErrorEnvelope
-// @Failure      502      {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/images/edits [post]
-func (h *Handler) ImageEdits(c *echo.Context) error {
-	return h.images().CreateImageEdit(c)
-}
-
-// AudioTranslations handles POST /v1/audio/translations.
-//
-// @Summary      Translate audio into English
-// @Tags         audio
-// @Accept       mpfd
-// @Produce      json
-// @Produce      plain
-// @Security     BearerAuth
-// @Param        file             formData  file    true   "Audio file to translate"
-// @Param        model            formData  string  true   "Model ID"
-// @Param        prompt           formData  string  false  "Optional English text to guide the model"
-// @Param        response_format  formData  string  false  "json, text, srt, verbose_json, or vtt"
-// @Param        temperature      formData  number  false  "Sampling temperature (0-1)"
-// @Success      200              {object}  map[string]interface{}  "English translation in the requested response_format"
-// @Failure      400              {object}  core.OpenAIErrorEnvelope
-// @Failure      401              {object}  core.OpenAIErrorEnvelope
-// @Failure      404              {object}  core.OpenAIErrorEnvelope
-// @Failure      502              {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/audio/translations [post]
-func (h *Handler) AudioTranslations(c *echo.Context) error {
-	return h.audio().CreateTranslation(c)
-}
-
 func (h *Handler) Embeddings(c *echo.Context) error {
 	return h.translatedInference().Embeddings(c)
-}
-
-// Batches handles POST /v1/batches.
-//
-// OpenAI-compatible fields are accepted (`input_file_id`, `endpoint`, `completion_window`, `metadata`).
-// Inline `requests` are also accepted for providers with native inline batch support (for example Anthropic).
-//
-// @Summary      Create a native provider batch
-// @Tags         batch
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        request  body      core.BatchRequest  true  "Batch request"
-// @Success      200      {object}  core.BatchResponse
-// @Failure      400      {object}  core.OpenAIErrorEnvelope
-// @Failure      401      {object}  core.OpenAIErrorEnvelope
-// @Failure      502      {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/batches [post]
-func (h *Handler) Batches(c *echo.Context) error {
-	return h.nativeBatch().Batches(c)
-}
-
-// GetBatch handles GET /v1/batches/{id}.
-//
-// @Summary      Get a batch
-// @Tags         batch
-// @Produce      json
-// @Security     BearerAuth
-// @Param        id   path      string  true  "Batch ID"
-// @Success      200  {object}  core.BatchResponse
-// @Failure      400  {object}  core.OpenAIErrorEnvelope
-// @Failure      401  {object}  core.OpenAIErrorEnvelope
-// @Failure      404  {object}  core.OpenAIErrorEnvelope
-// @Failure      500  {object}  core.OpenAIErrorEnvelope
-// @Failure      502  {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/batches/{id} [get]
-func (h *Handler) GetBatch(c *echo.Context) error {
-	return h.nativeBatch().GetBatch(c)
-}
-
-// ListBatches handles GET /v1/batches.
-//
-// @Summary      List batches
-// @Tags         batch
-// @Produce      json
-// @Security     BearerAuth
-// @Param        after  query     string  false  "Pagination cursor"
-// @Param        limit  query     int     false  "Maximum items to return (1-100, default 20)"
-// @Success      200    {object}  core.BatchListResponse
-// @Failure      400    {object}  core.OpenAIErrorEnvelope
-// @Failure      401    {object}  core.OpenAIErrorEnvelope
-// @Failure      404    {object}  core.OpenAIErrorEnvelope
-// @Failure      500    {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/batches [get]
-func (h *Handler) ListBatches(c *echo.Context) error {
-	return h.nativeBatch().ListBatches(c)
-}
-
-// CancelBatch handles POST /v1/batches/{id}/cancel.
-//
-// @Summary      Cancel a batch
-// @Tags         batch
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        id   path      string  true  "Batch ID"
-// @Success      200  {object}  core.BatchResponse
-// @Failure      400  {object}  core.OpenAIErrorEnvelope
-// @Failure      401  {object}  core.OpenAIErrorEnvelope
-// @Failure      404  {object}  core.OpenAIErrorEnvelope
-// @Failure      500  {object}  core.OpenAIErrorEnvelope
-// @Failure      502  {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/batches/{id}/cancel [post]
-func (h *Handler) CancelBatch(c *echo.Context) error {
-	return h.nativeBatch().CancelBatch(c)
-}
-
-// BatchResults handles GET /v1/batches/{id}/results.
-//
-// @Summary      Get batch results
-// @Tags         batch
-// @Produce      json
-// @Security     BearerAuth
-// @Param        id   path      string  true  "Batch ID"
-// @Success      200  {object}  core.BatchResultsResponse
-// @Failure      400  {object}  core.OpenAIErrorEnvelope
-// @Failure      401  {object}  core.OpenAIErrorEnvelope
-// @Failure      404  {object}  core.OpenAIErrorEnvelope
-// @Failure      409  {object}  core.OpenAIErrorEnvelope
-// @Failure      500  {object}  core.OpenAIErrorEnvelope
-// @Failure      502  {object}  core.OpenAIErrorEnvelope
-// @Router       /v1/batches/{id}/results [get]
-func (h *Handler) BatchResults(c *echo.Context) error {
-	return h.nativeBatch().BatchResults(c)
-}

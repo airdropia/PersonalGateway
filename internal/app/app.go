@@ -22,11 +22,9 @@ import (
 	"github.com/airdropia/pgw/internal/admin"
 	"github.com/airdropia/pgw/internal/admin/dashboard"
 	"github.com/airdropia/pgw/internal/auditlog"
-	"github.com/airdropia/pgw/internal/batch"
 	"github.com/airdropia/pgw/internal/budget"
 	"github.com/airdropia/pgw/internal/core"
 	"github.com/airdropia/pgw/internal/guardrails"
-	"github.com/airdropia/pgw/internal/filestore"
 	"github.com/airdropia/pgw/internal/httpclient"
 	"github.com/airdropia/pgw/internal/llmclient"
 	"github.com/airdropia/pgw/internal/mcpgateway"
@@ -54,8 +52,6 @@ type App struct {
 	usage               *usage.Result
 	budgets             *budget.Result
 	rateLimits          *ratelimit.Result
-	batch               *batch.Result
-	fileStore           *filestore.Result
 	virtualModels       *virtualmodels.Result
 	tagging             *tagging.Result
 	mcpGateway          *mcpgateway.Result
@@ -432,24 +428,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	app.rateLimits = rateLimitResult
 	app.register(subsystemRateLimits, ownedByShutdown, app.rateLimits.Close)
 
-	// Initialize batch lifecycle storage.
-	var batchResult *batch.Result
-	batchResult, err = batch.New(ctx, sharedStorage)
-	if err != nil {
-		return fail("failed to initialize batch storage", err)
-	}
-	app.batch = batchResult
-	app.register(subsystemBatch, ownedByShutdown, app.batch.Close)
-
-	// Initialize file provider mapping storage for OpenAI-compatible Files/Batches workflows.
-	var fileStoreResult *filestore.Result
-	fileStoreResult, err = filestore.New(ctx, sharedStorage)
-	if err != nil {
-		return fail("failed to initialize file mapping storage", err)
-	}
-	app.fileStore = fileStoreResult
-	app.register(subsystemFileStore, ownedByShutdown, app.fileStore.Close)
-
 	// Initialize virtual models (unified aliases + access overrides) using
 	// shared storage when already available. Provider names declared in YAML —
 	// including entries whose credentials did not resolve, which never register —
@@ -575,9 +553,7 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	// server; the live provider dependency remains the bare router.
 	var provider core.RoutableProvider = app.providers.Router
 	var translatedRequestPatcher server.TranslatedRequestPatcher
-	var batchRequestPreparers []server.BatchRequestPreparer
 	featureCaps := runtimeWorkflowFeatureCaps(appCfg)
-
 	var workflowResult *workflows.Result
 	workflowCompiler := workflows.NewCompilerWithFeatureCaps(guardrailResult.Service, featureCaps)
 	workflowResult, err = workflows.New(ctx, sharedStorage, workflowCompiler, refreshInterval)
@@ -601,9 +577,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	if featureCaps.Guardrails {
 		if app.guardrails != nil && app.guardrails.Service != nil {
 			translatedRequestPatcher = guardrails.NewWorkflowRequestPatcher(workflowResult.Service)
-			if appCfg.Guardrails.EnableForBatchProcessing {
-				batchRequestPreparers = append(batchRequestPreparers, guardrails.NewWorkflowBatchPreparer(provider, workflowResult.Service))
-			}
 			slog.Info(
 				"guardrails enabled",
 				"count", app.guardrails.Service.Len(),
@@ -611,14 +584,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 			)
 		}
 	}
-	if vm != nil {
-		// One combined preparer rewrites redirect sources and validates access,
-		// replacing the previous two-preparer pipeline.
-		batchRequestPreparers = append([]server.BatchRequestPreparer{
-			virtualmodels.NewBatchPreparer(provider, vm),
-		}, batchRequestPreparers...)
-	}
-	batchRequestPreparer := server.ComposeBatchRequestPreparers(providerAsNativeFileRouter(provider), batchRequestPreparers...)
 
 	// Create server
 	allowPassthroughV1Alias := appCfg.Server.AllowPassthroughV1Alias
@@ -683,16 +648,12 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		FailoverResolver:                failoverResolver(appCfg, vm),
 		WorkflowPolicyResolver:          workflowResult.Service,
 		TranslatedRequestPatcher:        translatedRequestPatcher,
-		BatchRequestPreparer:            batchRequestPreparer,
 		ExposedModelLister:              vm,
 		KeepOnlyAliasesAtModelsEndpoint: appCfg.Models.KeepOnlyAliasesAtModelsEndpoint,
 		PassthroughSemanticEnrichers:    cfg.Factory.PassthroughSemanticEnrichers(),
-		BatchStore:                      batchResult.Store,
-		FileStore:                       fileStoreResult.Store,
 		LogOnlyModelInteractions:        appCfg.Logging.OnlyModelInteractions,
 		DisablePassthroughRoutes:        !appCfg.Server.EnablePassthroughRoutes,
 		EnabledPassthroughProviders:     appCfg.Server.EnabledPassthroughProviders,
-		RealtimeEnabled:                 appCfg.Server.RealtimeEnabled,
 		AllowPassthroughV1Alias:         &allowPassthroughV1Alias,
 		UserPathHeader:                  appCfg.Server.UserPathHeader,
 		SwaggerEnabled:                  swaggerEnabled,
@@ -858,15 +819,6 @@ func (a *App) UsageLogger() usage.LoggerInterface {
 	return a.usage.Logger
 }
 
-func providerAsNativeFileRouter(provider core.RoutableProvider) core.NativeFileRoutableProvider {
-	if fileRouter, ok := provider.(core.NativeFileRoutableProvider); ok {
-		return fileRouter
-	}
-	return nil
-}
-
-// Start starts the HTTP server on the given address.
-// This is a blocking call that returns when the server stops.
 func (a *App) Start(ctx context.Context, addr string) error {
 	return a.startServer(ctx, addr, func(serverCtx context.Context) error {
 		return a.server.Start(serverCtx, addr)

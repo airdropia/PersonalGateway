@@ -11,7 +11,6 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"github.com/airdropia/pgw/config"
 	"github.com/airdropia/pgw/internal/auditlog"
 	"github.com/airdropia/pgw/internal/cache"
 	"github.com/airdropia/pgw/internal/core"
@@ -59,17 +58,9 @@ func TestHandleRequest_SemanticMissPopulatesExactCache(t *testing.T) {
 	store := cache.NewMapStore()
 	defer store.Close()
 
-	emb := &mockEmbedder{vector: []float32{1, 0, 0}}
-	vecStore := NewMapVecStore()
-	semCfg := config.SemanticCacheConfig{
-		SimilarityThreshold:     0.90,
-		TTL:                     new(3600),
-		MaxConversationMessages: new(10),
-	}
 
 	m := &ResponseCacheMiddleware{
 		simple:   newSimpleCacheMiddleware(store, time.Hour, nil),
-		semantic: newSemanticCacheMiddleware(emb, vecStore, semCfg, nil),
 	}
 
 	body := []byte(`{"model":"gpt-4","messages":[{"role":"user","content":"handle-request-exact-backfill"}]}`)
@@ -100,7 +91,6 @@ func TestHandleRequest_SemanticMissPopulatesExactCache(t *testing.T) {
 	}
 
 	m.simple.wg.Wait()
-	m.semantic.wg.Wait()
 
 	rec2 := run()
 	if rec2.Header().Get("X-Cache") != "HIT (exact)" {
@@ -353,17 +343,9 @@ func TestHandleRequest_FailoverUsedSkipsCacheWrites(t *testing.T) {
 	store := cache.NewMapStore()
 	defer store.Close()
 
-	emb := &mockEmbedder{vector: []float32{1, 0, 0}}
-	vecStore := NewMapVecStore()
-	semCfg := config.SemanticCacheConfig{
-		SimilarityThreshold:     0.90,
-		TTL:                     new(3600),
-		MaxConversationMessages: new(10),
-	}
 
 	m := &ResponseCacheMiddleware{
 		simple:   newSimpleCacheMiddleware(store, time.Hour, nil),
-		semantic: newSemanticCacheMiddleware(emb, vecStore, semCfg, nil),
 	}
 
 	body := []byte(`{"model":"gpt-4","messages":[{"role":"user","content":"fallback-skip-cache"}]}`)
@@ -397,7 +379,6 @@ func TestHandleRequest_FailoverUsedSkipsCacheWrites(t *testing.T) {
 	}
 
 	m.simple.wg.Wait()
-	m.semantic.wg.Wait()
 
 	rec2 := run(false)
 	if rec2.Header().Get("X-Cache") != "" {
@@ -622,17 +603,8 @@ func TestHandleRequest_GatewayTimeoutDoesNotPopulateSemanticCache(t *testing.T) 
 	store := cache.NewMapStore()
 	defer store.Close()
 
-	emb := &mockEmbedder{vector: []float32{1, 0, 0}}
-	vecStore := NewMapVecStore()
-	semCfg := config.SemanticCacheConfig{
-		Enabled:                 new(true),
-		SimilarityThreshold:     0.90,
-		TTL:                     new(3600),
-		MaxConversationMessages: new(10),
-	}
 	m := &ResponseCacheMiddleware{
 		simple:   newSimpleCacheMiddleware(store, time.Hour, nil),
-		semantic: newSemanticCacheMiddleware(emb, vecStore, semCfg, nil),
 	}
 
 	body := []byte(`{"model":"gpt-4","messages":[{"role":"user","content":"do-not-semantic-cache-timeout"}]}`)
@@ -668,7 +640,6 @@ func TestHandleRequest_GatewayTimeoutDoesNotPopulateSemanticCache(t *testing.T) 
 	}
 
 	m.simple.wg.Wait()
-	m.semantic.wg.Wait()
 
 	rec2 := run()
 	if rec2.Code != http.StatusGatewayTimeout {
@@ -686,18 +657,9 @@ func TestHandleRequest_CacheControlNoCacheBypassesAllLayers(t *testing.T) {
 	store := cache.NewMapStore()
 	defer store.Close()
 
-	emb := &mockEmbedder{vector: []float32{1, 0, 0}}
-	vecStore := NewMapVecStore()
-	semCfg := config.SemanticCacheConfig{
-		Enabled:                 new(true),
-		SimilarityThreshold:     0.90,
-		TTL:                     new(3600),
-		MaxConversationMessages: new(10),
-	}
 
 	m := &ResponseCacheMiddleware{
 		simple:   newSimpleCacheMiddleware(store, time.Hour, nil),
-		semantic: newSemanticCacheMiddleware(emb, vecStore, semCfg, nil),
 	}
 
 	body := []byte(`{"model":"gpt-4","messages":[{"role":"user","content":"handle-request-no-cache"}]}`)
@@ -728,7 +690,6 @@ func TestHandleRequest_CacheControlNoCacheBypassesAllLayers(t *testing.T) {
 	}
 
 	m.simple.wg.Wait()
-	m.semantic.wg.Wait()
 
 	rec2 := run("no-cache")
 	if got := rec2.Header().Get("X-Cache"); got != "" {

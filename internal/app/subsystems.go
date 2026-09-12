@@ -48,8 +48,6 @@ const (
 	subsystemUsage               = "usage"
 	subsystemBudgets             = "budgets"
 	subsystemRateLimits          = "rate limits"
-	subsystemBatch               = "batch store"
-	subsystemFileStore           = "file store"
 	subsystemProviderCredentials = "provider credentials"
 	subsystemVirtualModels       = "virtual models"
 	subsystemModelPreferences    = "model preferences"
@@ -109,9 +107,7 @@ func (a *App) shutdownOrder() []registeredSubsystem {
 	{name: subsystemWorkflows, close: closerOf(a.workflows)},
 	{name: subsystemPricingOverrides, close: closerOf(a.pricingOverrides)},
 	{name: subsystemGuardrails, close: closerOf(a.guardrails)},
-	{name: subsystemFileStore, close: closerOf(a.fileStore)},
 	// The remaining stores flush buffered work into storage, so they must
-		{name: subsystemBatch, close: closerOf(a.batch)},
 		{name: subsystemBudgets, close: closerOf(a.budgets)},
 		{name: subsystemRateLimits, close: closerOf(a.rateLimits)},
 		{name: subsystemUsage, close: closerOf(a.usage)},

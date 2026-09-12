@@ -21,9 +21,7 @@ import (
 	"github.com/airdropia/pgw/internal/admin"
 	"github.com/airdropia/pgw/internal/admin/dashboard"
 	"github.com/airdropia/pgw/internal/auditlog"
-	batchstore "github.com/airdropia/pgw/internal/batch"
 	"github.com/airdropia/pgw/internal/core"
-	"github.com/airdropia/pgw/internal/filestore"
 	"github.com/airdropia/pgw/internal/mcpgateway"
 	"github.com/airdropia/pgw/internal/responsecache"
 	"github.com/airdropia/pgw/internal/session"
@@ -78,12 +76,9 @@ type Config struct {
 	WorkflowPolicyResolver          RequestWorkflowPolicyResolver          // Optional: persisted workflow resolver used during workflow resolution
 	FailoverResolver                RequestFailoverResolver                // Optional: translated-route failover resolver
 	TranslatedRequestPatcher        TranslatedRequestPatcher               // Optional: request patcher for translated routes after workflow resolution
-	BatchRequestPreparer            BatchRequestPreparer                   // Optional: batch request preparer before native provider submission
-	ExposedModelLister              ExposedModelLister                     // Optional: additional public models to merge into GET /v1/models
+	ExposedModelLister              ExposedModelLister              ExposedModelLister                     // Optional: additional public models to merge into GET /v1/models
 	KeepOnlyAliasesAtModelsEndpoint bool                                   // Whether GET /v1/models should hide concrete provider models
 	PassthroughSemanticEnrichers    []core.PassthroughSemanticEnricher     // Optional: provider-owned passthrough semantic enrichers before workflow resolution
-	BatchStore                      batchstore.Store                       // Optional: Batch lifecycle persistence store
-	FileStore                       filestore.Store                        // Optional: File provider mapping persistence store
 	LogOnlyModelInteractions        bool                                   // Only log AI model endpoints (default: true)
 	DisablePassthroughRoutes        bool                                   // Disable /p/{provider}/{endpoint} route registration
 	MCPEnabled                      bool                                   // Enable the MCP gateway routes /mcp and /mcp/{server}
@@ -177,7 +172,6 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 		handler.usageSummarizer = cfg.UsageSummarizer
 	}
 	if cfg != nil {
-		handler.batchRequestPreparer = cfg.BatchRequestPreparer
 		handler.exposedModelLister = cfg.ExposedModelLister
 		handler.keepOnlyAliasesAtModelsEndpoint = cfg.KeepOnlyAliasesAtModelsEndpoint
 		handler.responseCache = cfg.ResponseCacheMiddleware
@@ -194,12 +188,6 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 	}
 	if cfg != nil && !passthroughV1PrefixNormalizationEnabled(cfg) {
 		handler.normalizePassthroughV1Prefix = false
-	}
-	if cfg != nil && cfg.BatchStore != nil {
-		handler.SetBatchStore(cfg.BatchStore)
-	}
-	if cfg != nil && cfg.FileStore != nil {
-		handler.SetFileStore(cfg.FileStore)
 	}
 
 	// Build list of paths that skip authentication
@@ -399,8 +387,6 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 	e.GET("/v1/models", handler.ListModels)
 	e.GET("/v1/usage", handler.UsageStatus)
 	e.POST("/v1/chat/completions", handler.ChatCompletion)
-	e.POST("/v1/messages", handler.Messages)
-	e.POST("/v1/messages/count_tokens", handler.CountMessageTokens)
 	if cfg != nil && cfg.MCPEnabled && cfg.MCPGateway != nil {
 		e.POST("/mcp", handler.MCP)
 		e.GET("/mcp", handler.MCP)
