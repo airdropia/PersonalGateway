@@ -3,7 +3,6 @@ package server
 
 import (
 	"net/http"
-	"strings"
 	"sync"
 
 	"github.com/labstack/echo/v5"
