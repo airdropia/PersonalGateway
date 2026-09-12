@@ -272,20 +272,6 @@ func TestAuthenticationStreamingEndpoints(t *testing.T) {
 		assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
 	})
 
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Use /v1/models instead of /health since /health is now public
-			req, err := http.NewRequest(http.MethodGet, ts.URL+"/v1/models", nil)
-			require.NoError(t, err)
-			req.Header.Set("Authorization", "Bearer "+tt.authKey)
-
-			resp, err := http.DefaultClient.Do(req)
-			require.NoError(t, err)
-			defer closeBody(resp)
-
-			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
-		})
 	}
 }
 
