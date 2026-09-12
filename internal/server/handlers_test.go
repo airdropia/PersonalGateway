@@ -3573,9 +3573,6 @@ func (c *capturingProvider) StreamResponses(_ context.Context, req *core.Respons
 }
 
 
-	p.capturedResponsesReq = req
-	return provideradapter.StreamResponsesViaChat(ctx, p, req, p.providerName)
-}
 
 func (c *capturingProvider) Embeddings(_ context.Context, req *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
 	c.capturedEmbeddingReq = req
