@@ -275,14 +275,6 @@ func TestUsage_StreamingChatCompletion_PostgreSQL(t *testing.T) {
 	assert.Equal(t, 18, entry.TotalTokens, "total tokens mismatch")
 }
 
-func TestUsage_StreamingChatCompletion_MongoDB(t *testing.T) {
-	fixture := SetupTestServer(t, TestServerConfig{
-		DBType:                "mongodb",
-		AuditLogEnabled:       false,
-		UsageEnabled:          true,
-		OnlyModelInteractions: false,
-	})
-
 func TestUsage_StreamingBothAuditAndUsage_PostgreSQL(t *testing.T) {
 	fixture := SetupTestServer(t, TestServerConfig{
 		DBType:                "postgresql",
