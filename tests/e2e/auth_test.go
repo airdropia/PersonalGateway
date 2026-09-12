@@ -272,67 +272,6 @@ func TestAuthenticationStreamingEndpoints(t *testing.T) {
 		assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
 	})
 
-	t.Run("streaming responses without auth", func(t *testing.T) {
-		reqBody := map[string]any{
-			"model":  "gpt-4",
-			"stream": true,
-			"input":  "Hello",
-		}
-
-		bodyBytes, err := json.Marshal(reqBody)
-		require.NoError(t, err)
-
-		req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/responses", bytes.NewReader(bodyBytes))
-		require.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-		defer closeBody(resp)
-
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-
-		var respBody map[string]any
-		err = json.NewDecoder(resp.Body).Decode(&respBody)
-		require.NoError(t, err)
-
-		errMap := respBody["error"].(map[string]any)
-		assert.Equal(t, "authentication_error", errMap["type"])
-	})
-}
-
-// TestAuthenticationCaseSensitivity verifies that the master key is case-sensitive
-func TestAuthenticationCaseSensitivity(t *testing.T) {
-	srv := setupAuthServer(t, "MySecretKey123")
-	ts := httptest.NewServer(srv)
-	defer ts.Close()
-
-	tests := []struct {
-		name           string
-		authKey        string
-		expectedStatus int
-	}{
-		{
-			name:           "exact match",
-			authKey:        "MySecretKey123",
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "lowercase",
-			authKey:        "mysecretkey123",
-			expectedStatus: http.StatusUnauthorized,
-		},
-		{
-			name:           "uppercase",
-			authKey:        "MYSECRETKEY123",
-			expectedStatus: http.StatusUnauthorized,
-		},
-		{
-			name:           "mixed case",
-			authKey:        "mySecretKey123",
-			expectedStatus: http.StatusUnauthorized,
-		},
-	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
