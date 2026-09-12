@@ -272,7 +272,6 @@ func TestAuthenticationStreamingEndpoints(t *testing.T) {
 		assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
 	})
 
-	}
 }
 
 // TestAuthenticationWithSpecialCharacters verifies that master keys with special characters work

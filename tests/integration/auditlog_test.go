@@ -363,4 +363,5 @@ func TestAuditLog_StreamingResponses_PostgreSQL(t *testing.T) {
 	dbassert.AssertAuditLogMatches(t, dbassert.ExpectedAuditLog{
 		Model:      "gpt-4",
 		StatusCode: 200,
+	})
 }
