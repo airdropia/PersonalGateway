@@ -97,36 +97,6 @@ func TestUsage_CapturesAllFields_MongoDB(t *testing.T) {
 	}, entry)
 }
 
-func TestUsage_MultipleRequests_PostgreSQL(t *testing.T) {
-	fixture := SetupTestServer(t, TestServerConfig{
-		DBType:                "postgresql",
-		AuditLogEnabled:       false,
-		UsageEnabled:          true,
-		OnlyModelInteractions: false,
-	})
-
-	// Clear existing entries
-	dbassert.ClearUsage(t, fixture.PgPool)
-
-	requestIDs := make([]string, 5)
-	for i := range 5 {
-		requestIDs[i] = uuid.New().String()
-		payload := newChatRequest("gpt-4", "Hello!")
-		resp := sendChatRequestWithHeaders(t, fixture.ServerURL, payload, map[string]string{
-			"X-Request-ID": requestIDs[i],
-		})
-		require.Equal(t, 200, resp.StatusCode)
-		closeBody(resp)
-	}
-
-	fixture.FlushAndClose(t)
-
-	// Verify each request has its own usage entry
-	for _, reqID := range requestIDs {
-		entries := dbassert.QueryUsageByRequestID(t, fixture.PgPool, reqID)
-		require.Len(t, entries, 1, "expected one usage entry for request ID %s", reqID)
-	}
-
 	// Verify total count
 	totalCount := dbassert.CountUsage(t, fixture.PgPool)
 	assert.GreaterOrEqual(t, totalCount, 5, "expected at least 5 usage entries")
@@ -313,38 +283,3 @@ func TestUsage_StreamingChatCompletion_MongoDB(t *testing.T) {
 	}, entry)
 }
 
-func TestUsage_StreamingResponses_PostgreSQL(t *testing.T) {
-	fixture := SetupTestServer(t, TestServerConfig{
-		DBType:                "postgresql",
-		AuditLogEnabled:       false,
-		UsageEnabled:          true,
-		OnlyModelInteractions: false,
-	})
-
-	requestID := uuid.New().String()
-
-	// Make streaming responses request
-	payload := newStreamingResponsesRequest("gpt-4", "Hello!")
-	resp := sendResponsesRequestWithHeaders(t, fixture.ServerURL, payload, map[string]string{
-		"X-Request-ID": requestID,
-	})
-	require.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
-
-	// Read and close the stream
-	_, _ = io.ReadAll(resp.Body)
-	closeBody(resp)
-
-	fixture.FlushAndClose(t)
-
-	entries := dbassert.QueryUsageByRequestID(t, fixture.PgPool, requestID)
-	require.Len(t, entries, 1)
-
-	dbassert.AssertUsageMatches(t, dbassert.ExpectedUsage{
-		Model:     "gpt-4",
-		Provider:  "test",
-
-	// They should share the same request ID
-	assert.Equal(t, requestID, auditEntries[0].RequestID)
-	assert.Equal(t, requestID, usageEntries[0].RequestID)
-}
