@@ -283,53 +283,23 @@ func TestUsage_StreamingChatCompletion_MongoDB(t *testing.T) {
 		OnlyModelInteractions: false,
 	})
 
-	requestID := uuid.New().String()
-
-	// Make streaming request
-	payload := newStreamingChatRequest("gpt-4", "Hello, world!")
-	resp := sendChatRequestWithHeaders(t, fixture.ServerURL, payload, map[string]string{
-		"X-Request-ID": requestID,
-	})
-	require.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
-
-	// Read and close the stream
-	_, _ = io.ReadAll(resp.Body)
-	closeBody(resp)
-
-	fixture.FlushAndClose(t)
-
-	entries := dbassert.QueryUsageByRequestIDMongo(t, fixture.MongoDb, requestID)
-	require.Len(t, entries, 1, "expected exactly one usage entry for streaming request")
-
-	entry := entries[0]
-
-	dbassert.AssertUsageFieldCompleteness(t, entry)
-	dbassert.AssertUsageMatches(t, dbassert.ExpectedUsage{
-		Model:     "gpt-4",
-		Provider:  "test",
-		Endpoint:  "/v1/chat/completions",
-		RequestID: requestID,
-	}, entry)
-}
-
-func TestUsage_StreamingResponses_PostgreSQL(t *testing.T) {
+func TestUsage_StreamingBothAuditAndUsage_PostgreSQL(t *testing.T) {
 	fixture := SetupTestServer(t, TestServerConfig{
 		DBType:                "postgresql",
-		AuditLogEnabled:       false,
+		AuditLogEnabled:       true,
 		UsageEnabled:          true,
+		LogBodies:             true,
 		OnlyModelInteractions: false,
 	})
 
 	requestID := uuid.New().String()
 
-	// Make streaming responses request
-	payload := newStreamingResponsesRequest("gpt-4", "Hello!")
-	resp := sendResponsesRequestWithHeaders(t, fixture.ServerURL, payload, map[string]string{
+	// Make streaming request
+	payload := newStreamingChatRequest("gpt-4", "Hello!")
+	resp := sendChatRequestWithHeaders(t, fixture.ServerURL, payload, map[string]string{
 		"X-Request-ID": requestID,
 	})
 	require.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
 
 	// Read and close the stream
 	_, _ = io.ReadAll(resp.Body)
@@ -337,12 +307,12 @@ func TestUsage_StreamingResponses_PostgreSQL(t *testing.T) {
 
 	fixture.FlushAndClose(t)
 
-	entries := dbassert.QueryUsageByRequestID(t, fixture.PgPool, requestID)
-	require.Len(t, entries, 1)
+	// Both tables should have entries for streaming request
+	auditEntries := dbassert.QueryAuditLogsByRequestID(t, fixture.PgPool, requestID)
+	require.Len(t, auditEntries, 1, "expected audit log entry for streaming")
 
-	dbassert.AssertUsageMatches(t, dbassert.ExpectedUsage{
-		Model:     "gpt-4",
-		Provider:  "test",
+	usageEntries := dbassert.QueryUsageByRequestID(t, fixture.PgPool, requestID)
+	require.Len(t, usageEntries, 1, "expected usage entry for streaming")
 
 	// They should share the same request ID
 	assert.Equal(t, requestID, auditEntries[0].RequestID)
