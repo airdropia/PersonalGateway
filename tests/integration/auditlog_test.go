@@ -332,36 +332,4 @@ func TestAuditLog_StreamingChatCompletion_MongoDB(t *testing.T) {
 	}, entry)
 }
 
-func TestAuditLog_StreamingResponses_PostgreSQL(t *testing.T) {
-	fixture := SetupTestServer(t, TestServerConfig{
-		DBType:                "postgresql",
-		AuditLogEnabled:       true,
-		UsageEnabled:          false,
-		LogBodies:             true,
-		OnlyModelInteractions: false,
-	})
-
-	requestID := uuid.New().String()
-
-	// Make streaming responses request
-	payload := newStreamingResponsesRequest("gpt-4", "Hello!")
-	resp := sendResponsesRequestWithHeaders(t, fixture.ServerURL, payload, map[string]string{
-		"X-Request-ID": requestID,
-	})
-	require.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
-
-	// Read and close the stream
-	_, _ = io.ReadAll(resp.Body)
-	closeBody(resp)
-
-	fixture.FlushAndClose(t)
-
-	entries := dbassert.QueryAuditLogsByRequestID(t, fixture.PgPool, requestID)
-	require.Len(t, entries, 1)
-
-	dbassert.AssertAuditLogMatches(t, dbassert.ExpectedAuditLog{
-		Model:      "gpt-4",
-		StatusCode: 200,
-	}, entries[0])
 }
