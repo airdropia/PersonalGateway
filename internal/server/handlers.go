@@ -318,3 +318,5 @@ func (h *Handler) ListModels(c *echo.Context) error {
 
 func (h *Handler) Embeddings(c *echo.Context) error {
 	return h.translatedInference().Embeddings(c)
+}
+

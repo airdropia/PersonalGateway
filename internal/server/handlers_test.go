@@ -485,9 +485,11 @@ func inferQualifiedProviderValue(values map[string]string, model string) (string
 
 
 func (m *mockProvider) NativeResponseProviderTypes() []string {
-	return m.NativeFileProviderTypes()
+	return nil
 }
 
+func (m *mockProvider) ChatCompletion(_ context.Context, _ *core.ChatRequest) (*core.ChatResponse, error) {
+	if m.err != nil {
 		return nil, m.err
 	}
 	return m.response, nil
