@@ -41,7 +41,3 @@ func setRawJSONValue(object rawJSONObject, key string, value any) error {
 	return nil
 }
 
-func rawJSONValuePresent(object rawJSONObject, key string) bool {
-	raw, exists := object[key]
-	return exists && len(bytes.TrimSpace(raw)) > 0 && !bytes.Equal(bytes.TrimSpace(raw), []byte("null"))
-}

@@ -250,9 +250,6 @@ func (r *closeCountingReadCloser) Close() error {
 	return r.ReadCloser.Close()
 }
 
-func setPathParam(c *echo.Context, name, value string) {
-	c.SetPathValues(echo.PathValues{{Name: name, Value: value}})
-}
 
 type capturingAuditLogger struct {
 	config  auditlog.Config
@@ -3575,10 +3572,6 @@ func (c *capturingProvider) StreamResponses(_ context.Context, req *core.Respons
 	return io.NopCloser(strings.NewReader(c.streamData)), nil
 }
 
-type chatBackedResponsesProvider struct {
-	capturingProvider
-	providerName string
-}
 
 func (p *chatBackedResponsesProvider) StreamResponses(ctx context.Context, req *core.ResponsesRequest) (io.ReadCloser, error) {
 	p.capturedResponsesReq = req

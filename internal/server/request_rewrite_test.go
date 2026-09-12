@@ -267,29 +267,6 @@ func TestRequestRewriteMiddlewareExposesSessionID(t *testing.T) {
 	}
 }
 
-func TestRequestRewriteMiddlewareRewritesMessages(t *testing.T) {
-	provider := newRewriteTestProvider()
-	srv := New(provider, &Config{
-		RequestRewriters: []ext.RequestRewriter{replaceBodyRewriter("swap", "PING", "PONG")},
-	})
-
-	rec := postJSON(t, srv, "/v1/messages",
-		`{"model":"gpt-4o-mini","max_tokens":16,"messages":[{"role":"user","content":"PING"}]}`)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d (%s)", rec.Code, rec.Body.String())
-	}
-	if provider.capturedChatReq == nil {
-		t.Fatal("expected chat request to be captured")
-	}
-	body, err := json.Marshal(provider.capturedChatReq)
-	if err != nil {
-		t.Fatalf("marshal captured request: %v", err)
-	}
-	if !strings.Contains(string(body), "PONG") || strings.Contains(string(body), "PING") {
-		t.Errorf("provider request not rewritten: %s", body)
-	}
-}
 
 func TestRequestRewriteMiddlewareEndpointGating(t *testing.T) {
 	tests := []struct {

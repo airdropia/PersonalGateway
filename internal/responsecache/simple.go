@@ -20,11 +20,6 @@ import (
 	"github.com/airdropia/pgw/internal/core"
 )
 
-var cacheablePaths = map[string]bool{
-	"/v1/chat/completions": true,
-	"/v1/responses":        true,
-	"/v1/embeddings":       true,
-}
 
 const (
 	cacheWriteWorkerCount = 8
