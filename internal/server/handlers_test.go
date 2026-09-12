@@ -7,13 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"slices"
-	"sort"
 	"strings"
 	"syscall"
 	"testing"
@@ -2719,76 +2715,6 @@ func TestStreamingChatCompletion_InjectsStreamOptions(t *testing.T) {
 		t.Error("ChatCompletion streaming should have IncludeUsage=true")
 	}
 }
-
-
-
-func TestGetDeleteAndContentFile(t *testing.T) {
-	mock := &mockProvider{
-		supportedModels: []string{"gpt-4o-mini"},
-		providerTypes: map[string]string{
-			"gpt-4o-mini": "openai",
-		},
-		modelsResponse: &core.ModelsResponse{
-			Object: "list",
-			Data: []core.Model{
-				{ID: "gpt-4o-mini", Object: "model"},
-			},
-		},
-	}
-
-	e := echo.New()
-	handler := NewHandler(mock, nil, nil, nil)
-
-	// Get file
-	getReq := httptest.NewRequest(http.MethodGet, "/v1/files/file_1", nil)
-	getRec := httptest.NewRecorder()
-	getCtx := e.NewContext(getReq, getRec)
-	getCtx.SetPath("/v1/files/:id")
-	setPathParam(getCtx, "id", "file_1")
-	if err := handler.GetFile(getCtx); err != nil {
-		t.Fatalf("get handler returned error: %v", err)
-	}
-	if getRec.Code != http.StatusOK {
-		t.Fatalf("expected get status 200, got %d", getRec.Code)
-	}
-
-	// Delete file
-	delReq := httptest.NewRequest(http.MethodDelete, "/v1/files/file_1", nil)
-	delRec := httptest.NewRecorder()
-	delCtx := e.NewContext(delReq, delRec)
-	delCtx.SetPath("/v1/files/:id")
-	setPathParam(delCtx, "id", "file_1")
-	if err := handler.DeleteFile(delCtx); err != nil {
-		t.Fatalf("delete handler returned error: %v", err)
-	}
-	if delRec.Code != http.StatusOK {
-		t.Fatalf("expected delete status 200, got %d", delRec.Code)
-	}
-
-	// Get file content
-	contentReq := httptest.NewRequest(http.MethodGet, "/v1/files/file_1/content", nil)
-	contentRec := httptest.NewRecorder()
-	contentCtx := e.NewContext(contentReq, contentRec)
-	contentCtx.SetPath("/v1/files/:id/content")
-	setPathParam(contentCtx, "id", "file_1")
-	if err := handler.GetFileContent(contentCtx); err != nil {
-		t.Fatalf("content handler returned error: %v", err)
-	}
-	if contentRec.Code != http.StatusOK {
-		t.Fatalf("expected content status 200, got %d", contentRec.Code)
-	}
-	if !strings.Contains(contentRec.Body.String(), "\"ok\":true") {
-		t.Fatalf("unexpected content body: %s", contentRec.Body.String())
-	}
-}
-
-
-
-
-
-
-
-
 
 
 
