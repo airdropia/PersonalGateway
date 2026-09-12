@@ -23,7 +23,6 @@ import (
 	"github.com/airdropia/pgw/internal/llmclient"
 	"github.com/airdropia/pgw/internal/guardrails"
 	"github.com/airdropia/pgw/internal/virtualmodels"
-	provideradapter "github.com/airdropia/pgw/internal/providers"
 	"github.com/airdropia/pgw/internal/usage"
 )
 
