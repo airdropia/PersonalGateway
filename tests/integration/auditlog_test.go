@@ -332,4 +332,3 @@ func TestAuditLog_StreamingChatCompletion_MongoDB(t *testing.T) {
 	}, entry)
 }
 
-}
