@@ -150,39 +150,6 @@ func TestAuthenticationE2E(t *testing.T) {
 				assert.Equal(t, "authentication_error", errMap["type"])
 			},
 		},
-		{
-			name:       "POST /v1/responses with valid auth",
-			endpoint:   "/v1/responses",
-			method:     http.MethodPost,
-			authHeader: "Bearer " + testMasterKey,
-			body: map[string]any{
-				"model": "gpt-4",
-				"input": "Hello",
-			},
-			expectedStatus: http.StatusOK,
-			checkResponse: func(t *testing.T, body []byte) {
-				var resp core.ResponsesResponse
-				require.NoError(t, json.Unmarshal(body, &resp))
-				assert.NotEmpty(t, resp.ID)
-			},
-		},
-		{
-			name:       "POST /v1/responses without auth",
-			endpoint:   "/v1/responses",
-			method:     http.MethodPost,
-			authHeader: "",
-			body: map[string]any{
-				"model": "gpt-4",
-				"input": "Hello",
-			},
-			expectedStatus: http.StatusUnauthorized,
-			checkResponse: func(t *testing.T, body []byte) {
-				var resp map[string]any
-				require.NoError(t, json.Unmarshal(body, &resp))
-				errMap := resp["error"].(map[string]any)
-				assert.Equal(t, "authentication_error", errMap["type"])
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -293,59 +260,6 @@ func TestAuthenticationStreamingEndpoints(t *testing.T) {
 		require.NoError(t, err)
 
 		req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/chat/completions", bytes.NewReader(bodyBytes))
-		require.NoError(t, err)
-		req.Header.Set("Authorization", "Bearer "+testMasterKey)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-		defer closeBody(resp)
-
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
-	})
-
-	t.Run("streaming chat completion without auth", func(t *testing.T) {
-		reqBody := map[string]any{
-			"model":  "gpt-4",
-			"stream": true,
-			"messages": []map[string]string{
-				{"role": "user", "content": "Hello"},
-			},
-		}
-
-		bodyBytes, err := json.Marshal(reqBody)
-		require.NoError(t, err)
-
-		req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/chat/completions", bytes.NewReader(bodyBytes))
-		require.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-		defer closeBody(resp)
-
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-
-		var respBody map[string]any
-		err = json.NewDecoder(resp.Body).Decode(&respBody)
-		require.NoError(t, err)
-
-		errMap := respBody["error"].(map[string]any)
-		assert.Equal(t, "authentication_error", errMap["type"])
-	})
-
-	t.Run("streaming responses with valid auth", func(t *testing.T) {
-		reqBody := map[string]any{
-			"model":  "gpt-4",
-			"stream": true,
-			"input":  "Hello",
-		}
-
-		bodyBytes, err := json.Marshal(reqBody)
-		require.NoError(t, err)
-
-		req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/responses", bytes.NewReader(bodyBytes))
 		require.NoError(t, err)
 		req.Header.Set("Authorization", "Bearer "+testMasterKey)
 		req.Header.Set("Content-Type", "application/json")

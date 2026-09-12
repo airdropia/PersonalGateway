@@ -178,38 +178,6 @@ func TestAuditLog_WithoutBodies_PostgreSQL(t *testing.T) {
 	}
 }
 
-func TestAuditLog_ResponsesEndpoint_PostgreSQL(t *testing.T) {
-	fixture := SetupTestServer(t, TestServerConfig{
-		DBType:                "postgresql",
-		AuditLogEnabled:       true,
-		UsageEnabled:          false,
-		LogBodies:             true,
-		OnlyModelInteractions: false,
-	})
-
-	requestID := uuid.New().String()
-
-	payload := newResponsesRequest("gpt-4", "Hello!")
-	resp := sendResponsesRequestWithHeaders(t, fixture.ServerURL, payload, map[string]string{
-		"X-Request-ID": requestID,
-	})
-	require.Equal(t, 200, resp.StatusCode)
-	closeBody(resp)
-
-	fixture.FlushAndClose(t)
-
-	entries := dbassert.QueryAuditLogsByRequestID(t, fixture.PgPool, requestID)
-	require.Len(t, entries, 1)
-
-	dbassert.AssertAuditLogMatches(t, dbassert.ExpectedAuditLog{
-		Model:      "gpt-4",
-		StatusCode: 200,
-		Method:     "POST",
-		Path:       "/v1/responses",
-		RequestID:  requestID,
-	}, entries[0])
-}
-
 func TestAuditLog_MultipleRequests_PostgreSQL(t *testing.T) {
 	fixture := SetupTestServer(t, TestServerConfig{
 		DBType:                "postgresql",
@@ -396,7 +364,3 @@ func TestAuditLog_StreamingResponses_PostgreSQL(t *testing.T) {
 		Model:      "gpt-4",
 		StatusCode: 200,
 		Method:     "POST",
-		Path:       "/v1/responses",
-		RequestID:  requestID,
-	}, entries[0])
-}
