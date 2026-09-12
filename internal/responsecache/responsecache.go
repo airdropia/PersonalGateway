@@ -18,6 +18,23 @@ import (
 
 const responseCachePrefix = "gomodel:response:"
 
+// Cache type and X-Cache header values shared by the exact cache layer.
+const (
+	CacheTypeExact      = "exact"
+	CacheTypeSemantic   = "semantic"
+	CacheHeaderExact    = "HIT (exact)"
+	CacheHeaderSemantic = "HIT (semantic)"
+)
+
+// shouldSkipAllCacheHeaders reports whether caching must be bypassed for this
+// request, matching the exact-cache middleware semantics for no-cache and no-store.
+func shouldSkipAllCacheHeaders(header func(string) string) bool {
+	if strings.EqualFold(header("X-Cache-Control"), "no-store") {
+		return true
+	}
+	return shouldSkipCacheControl(header("Cache-Control"))
+}
+
 var internalRequestHeaderAllowlist = map[string]struct{}{
 	http.CanonicalHeaderKey("Accept"):                     {},
 	http.CanonicalHeaderKey("Baggage"):                    {},
@@ -111,7 +128,7 @@ func (m *ResponseCacheMiddleware) handle(ex exchange, body []byte, next func() e
 		return next()
 	}
 
-	if !skipExact && m.simple != nil {
+	if m.simple != nil {
 		if hit, err := m.simple.TryHit(ex, body); err != nil || hit {
 			return err
 		}
