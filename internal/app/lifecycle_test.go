@@ -3,11 +3,9 @@ package app
 import (
 	"context"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/airdropia/pgw/config"
-	"github.com/airdropia/pgw/ext"
 	"github.com/airdropia/pgw/internal/providers"
 )
 
