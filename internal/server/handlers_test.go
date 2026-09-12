@@ -3573,7 +3573,6 @@ func (c *capturingProvider) StreamResponses(_ context.Context, req *core.Respons
 }
 
 
-func (p *chatBackedResponsesProvider) StreamResponses(ctx context.Context, req *core.ResponsesRequest) (io.ReadCloser, error) {
 	p.capturedResponsesReq = req
 	return provideradapter.StreamResponsesViaChat(ctx, p, req, p.providerName)
 }
