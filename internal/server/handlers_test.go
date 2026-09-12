@@ -6400,3 +6400,105 @@ type staticPipelineResolver struct{ pipeline *guardrails.Pipeline }
 func (s staticPipelineResolver) PipelineForContext(context.Context) *guardrails.Pipeline {
 	return s.pipeline
 }
+type mockUsageLogger struct {
+	config usage.Config
+}
+
+func (m *mockUsageLogger) Write(_ *usage.UsageEntry) {}
+func (m *mockUsageLogger) Config() usage.Config      { return m.config }
+func (m *mockUsageLogger) Close() error              { return nil }
+
+type capturingUsageLogger struct {
+	config   usage.Config
+	captured **usage.UsageEntry
+}
+
+func (c *capturingUsageLogger) Write(entry *usage.UsageEntry) { *c.captured = entry }
+func (c *capturingUsageLogger) Config() usage.Config          { return c.config }
+func (c *capturingUsageLogger) Close() error                  { return nil }
+
+type collectingUsageLogger struct {
+	config  usage.Config
+	entries []*usage.UsageEntry
+}
+
+func (c *collectingUsageLogger) Write(entry *usage.UsageEntry) {
+	if entry == nil {
+		return
+	}
+	c.entries = append(c.entries, entry)
+}
+
+func (c *collectingUsageLogger) Config() usage.Config { return c.config }
+func (c *collectingUsageLogger) Close() error         { return nil }
+
+type mockPricingResolver struct {
+	pricing  *core.ModelPricing
+	model    string
+	provider string
+}
+
+func (m *mockPricingResolver) ResolvePricing(model, provider string) *core.ModelPricing {
+	m.model = model
+	m.provider = provider
+	return m.pricing
+}
+
+// capturingProvider is a mockProvider that captures the request passed to StreamResponses/StreamChatCompletion.
+type capturingProvider struct {
+	mockProvider
+	capturedChatCtx      context.Context
+	capturedChatReq      *core.ChatRequest
+	capturedResponsesReq *core.ResponsesRequest
+	capturedEmbeddingReq *core.EmbeddingRequest
+}
+
+func (c *capturingProvider) ChatCompletion(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
+	c.capturedChatCtx = ctx
+	c.capturedChatReq = req
+	if c.err != nil {
+		return nil, c.err
+	}
+	return c.response, nil
+}
+
+func (c *capturingProvider) StreamChatCompletion(ctx context.Context, req *core.ChatRequest) (io.ReadCloser, error) {
+	c.capturedChatCtx = ctx
+	c.capturedChatReq = req
+	return io.NopCloser(strings.NewReader(c.streamData)), nil
+}
+
+func (c *capturingProvider) Responses(_ context.Context, req *core.ResponsesRequest) (*core.ResponsesResponse, error) {
+	c.capturedResponsesReq = req
+	if c.err != nil {
+		return nil, c.err
+	}
+	return c.responsesResponse, nil
+}
+
+func (c *capturingProvider) StreamResponses(_ context.Context, req *core.ResponsesRequest) (io.ReadCloser, error) {
+	c.capturedResponsesReq = req
+	return io.NopCloser(strings.NewReader(c.streamData)), nil
+}
+
+type chatBackedResponsesProvider struct {
+	capturingProvider
+	providerName string
+}
+
+func (p *chatBackedResponsesProvider) StreamResponses(ctx context.Context, req *core.ResponsesRequest) (io.ReadCloser, error) {
+	p.capturedResponsesReq = req
+	return provideradapter.StreamResponsesViaChat(ctx, p, req, p.providerName)
+}
+
+func (c *capturingProvider) Embeddings(_ context.Context, req *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
+	c.capturedEmbeddingReq = req
+	if c.embeddingErr != nil {
+		return nil, c.embeddingErr
+	}
+	if c.err != nil {
+		return nil, c.err
+	}
+	return c.embeddingResponse, nil
+}
+
